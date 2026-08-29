@@ -1,0 +1,122 @@
+MODULE C4Mem ;
+
+(* Chapter 4.  Memory, made visible: pools own storage, slices view
+   it, VAR says who may change what, and strings are slices of CHAR.
+   Every allocation in this program can be pointed at and answered
+   for -- there is no garbage collector deciding later, and no free()
+   to forget.
+
+   The comments under the procedure headers are DOCSTRINGS: `m9c
+   --doc` renders them -- with their `name -- description` parameter
+   lines -- into the module's reference page, and the editor shows
+   them on hover.  Documentation that lives anywhere else drifts.   *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT DynStr ;
+
+PROCEDURE Spread (RO xs: SLICE OF F64) : F64 =
+  (* the spread (max - min) of a series, nothing kept.
+
+       xs -- any slice: a whole array lent at the call site, or a
+             SLICE (a, start, len) view of part of one.  RO means
+             this procedure may read it and provably does not write
+             it -- the caller lends, nothing more.
+
+     No POOL parameter: the docs/pools.md rule is that the pool
+     appears exactly when an allocation OUTLIVES the call, and
+     nothing here allocates at all.                                 *)
+VAR
+  i : I64 ;
+  lo, hi : F64 ;
+BEGIN
+  lo := xs [0] ;
+  hi := xs [0] ;
+  FOR i := 1 TO LEN (xs) - 1 DO
+    IF xs [i] < lo THEN lo := xs [i] END ;
+    IF xs [i] > hi THEN hi := xs [i] END
+  END ;
+  RETURN hi - lo
+END Spread ;
+
+PROCEDURE Describe (VAR pool: POOL ; RO label: STR ;
+                    RO xs: SLICE OF F64) : STR
+  RAISES ValueRange =
+  (* one formatted line about a series, built in the CALLER'S pool.
+     RAISES ValueRange because Fmt.Fixed can -- the accounting is
+     chapter 2's, and it is why this line is in the signature and
+     not in a changelog.
+
+       pool  -- where the answer lives.  The pool parameter IS the
+                ownership contract: the result outlives this call,
+                so the caller says which arena holds it and thereby
+                who frees it (freeing the pool frees every string
+                built here, in one act).
+       label -- prefixed verbatim.
+       xs    -- the series; only read.                              *)
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+  sum : F64 ;
+BEGIN
+  sum := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO sum := sum + xs [i] END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, label) ;
+  DynStr.Append (pool, d, ': n=') ;
+  DynStr.AppendI64 (pool, d, LEN (xs)) ;
+  DynStr.Append (pool, d, ' mean=') ;
+  DynStr.Append (pool, d, Fmt.Fixed (pool, sum / F64 (LEN (xs)), 2)) ;
+  DynStr.Append (pool, d, ' spread=') ;
+  DynStr.Append (pool, d, Fmt.Fixed (pool, Spread (xs), 2)) ;
+  RETURN DynStr.View (d)
+END Describe ;
+
+PROCEDURE Shift (VAR xs: SLICE OF F64 ; offset: F64) =
+  (* adds offset to every element, IN PLACE.
+
+       xs     -- VAR: this procedure writes through the slice, and
+                 the mode says so at both ends -- the caller can see
+                 the mutation coming at the call site, the checker
+                 refuses the write without it.
+       offset -- what to add.                                       *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (xs) - 1 DO
+    xs [i] := xs [i] + offset
+  END
+END Shift ;
+
+VAR
+  pool : POOL ;                  (* dies with the program *)
+  a    : ARRAY 8 OF F64 ;
+  more : SLICE OF F64 ;
+  i    : I64 ;
+  greeting : STR ;
+
+BEGIN
+  FOR i := 0 TO 7 DO a [i] := F64 (i) * 1.5 END ;
+
+  (* an ARRAY lends itself as a slice at a call site; SLICE takes a
+     checked sub-view -- same storage, no copy, bounds proven *)
+  Io.WriteLine (Describe (pool, 'all', a)) ;
+  Io.WriteLine (Describe (pool, 'mid', SLICE (a, 2, 4))) ;
+
+  (* a slice with no array behind it: NEW carves it from a pool *)
+  more := NEW (pool, F64, 5) ;
+  FOR i := 0 TO 4 DO more [i] := 100.0 + F64 (i) END ;
+  Shift (more, 0.25) ;
+  Io.WriteLine (Describe (pool, 'shifted', more)) ;
+
+  (* strings are SLICE OF CHAR; `+` composes into HEAP, the one
+     predeclared never-freed pool -- fine in a program whose strings
+     die with it, wrong in a server loop, and greppable either way *)
+  greeting := 'pools: ' + 'carve, use, ' + 'free as one' ;
+  Io.WriteLine (greeting) ;
+  Io.WriteI64 (LEN (greeting)) ;
+  Io.WriteLine (' characters, and every one accounted for')
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('formatting failed') ;
+    Io.Halt (1)
+END C4Mem.

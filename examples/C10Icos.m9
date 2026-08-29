@@ -1,6 +1,6 @@
-MODULE C9Icos ;
+MODULE C10Icos ;
 
-(* Chapter 9.  The capstone: nine years of real hourly CO2 from the
+(* Chapter 10.  The capstone: nine years of real hourly CO2 from the
    ICOS station Hyltemossa (HTM, southern Sweden), measured 150 m
    above the forest, read straight out of the Carbon Portal's zarr
    service and decomposed with ordinary least squares into a linear
@@ -17,7 +17,8 @@ MODULE C9Icos ;
    Quality control is the ATC convention the store itself documents:
    keep an hour when its flag is 'U' or 'O'.  The normal equations
    are accumulated in one pass, solved by Cholesky, and the result
-   plotted like chapter 8: monthly means beside the fitted curve.
+   plotted like chapter 9: every QC-passed hour a small black dot,
+   monthly means and the fitted curve drawn over them.
 
    Data: ICOS ObsPack collection, CC BY 4.0,
    doi:10.18160/JZ2X-GZGU.                                          *)
@@ -44,6 +45,10 @@ CONST
 
 PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i: I64) : F64
   RAISES ZarrStore.IOError =
+  (* element i of a 1-D array, checked against the store's shape.
+
+       arr -- VAR because a read can grow the chunk cache.
+       i   -- 0-based; out of range raises IndexError, always.      *)
 VAR ix : ARRAY 1 OF I64 ;
 BEGIN
   ix [0] := i ;
@@ -52,6 +57,8 @@ END At ;
 
 PROCEDURE AtI (VAR arr: PTR ZarrStore.Array ; i: I64) : I64
   RAISES ZarrStore.IOError, ValueRange =
+  (* the integer twin: ValueRange is the store handing back
+     something an I64 cannot hold -- declared, because chapter 2. *)
 VAR ix : ARRAY 1 OF I64 ;
 BEGIN
   ix [0] := i ;
@@ -60,6 +67,12 @@ END AtI ;
 
 PROCEDURE Model (RO c: SLICE OF F64 ; t: F64) : F64
   RAISES ValueRange, Overflow, IndexError =
+  (* the fitted curve at one time.
+
+       c -- the six coefficients, in the order the design matrix
+            declared them: constant, slope, annual cos/sin,
+            semiannual cos/sin.
+       t -- years relative to Mid, the fit's own time axis.         *)
 BEGIN
   RETURN c [0] + c [1] * t
        + c [2] * Math.Cos (2.0 * Math.Pi * t)
@@ -79,6 +92,7 @@ VAR
   mSum : ARRAY 105 OF F64 ;
   mN   : ARRAY 105 OF I64 ;
   mx, my : ARRAY 105 OF F64 ;
+  hx, hy : SLICE OF F64 ;
   fx, fy : ARRAY 420 OF F64 ;
   n, i, j, k, valid, mo, nm, flag : I64 ;
   y, v, t, amp1, amp2 : F64 ;
@@ -98,6 +112,8 @@ BEGIN
 
   xtx := Mat.New (pool, 6, 6) ;
   rhs := Mat.New (pool, 6, 1) ;
+  hx := NEW (pool, F64, n) ;      (* the hours themselves, plotted *)
+  hy := NEW (pool, F64, n) ;
   valid := 0 ;
   FOR i := 0 TO n - 1 DO
     v := At (ac, i) ;
@@ -118,6 +134,8 @@ BEGIN
         END ;
         Mat.Set (rhs, j, 0, Mat.Get (rhs, j, 0) + b [j] * v)
       END ;
+      hx [valid] := y ;
+      hy [valid] := v ;
       (* monthly bin for the plot *)
       mo := I64 (Math.Floor ((y - Lo) * 12.0)) ;
       IF mo >= 0 AND mo < Months THEN
@@ -162,6 +180,7 @@ BEGIN
     fy [i] := Model (coef, y - Mid)
   END ;
   Plot.ClearFigure () ;
+  Plot.SetDots (SLICE (hx, 0, valid), SLICE (hy, 0, valid)) ;
   Plot.AddLine (SLICE (mx, 0, nm), SLICE (my, 0, nm), 0, 'monthly mean') ;
   Plot.AddLine (fx, fy, 1, 'trend + 2 harmonics') ;
   svg := Plot.Render (pool, 'CO2 at Hyltemossa, 150 m (ICOS, CC BY 4.0)',
@@ -195,4 +214,4 @@ EXCEPT
 | Io.IOError (p) :
     Io.ErrLine ('cannot write /tmp/htm.svg') ;
     Io.Halt (1)
-END C9Icos.
+END C10Icos.

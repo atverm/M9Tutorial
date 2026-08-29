@@ -1,0 +1,5 @@
+all: n=8 mean=5.25 spread=10.50
+mid: n=4 mean=5.25 spread=4.50
+shifted: n=5 mean=102.25 spread=4.00
+pools: carve, use, free as one
+30 characters, and every one accounted for

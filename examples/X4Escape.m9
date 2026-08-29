@@ -1,0 +1,32 @@
+MODULE X4Escape ;
+
+(* EXPECT-ERROR: pool-interior pointer escapes its pool *)
+(* Chapter 4, a program that must NOT compile.  The pool is a LOCAL:
+   everything carved from it dies when the procedure returns, so a
+   pointer into it must not survive the frame.  In C this is the
+   classic return-of-a-dangling-pointer; here it is refused at
+   compile time, by name.                                           *)
+
+IMPORT Io ;
+
+TYPE
+  Point = RECORD
+    x, y : F64 ;
+  END ;
+
+PROCEDURE Make () : PTR Point =
+VAR
+  scratch : POOL ;
+  p : PTR Point IN scratch ;
+BEGIN
+  p := NEW (Point, scratch) ;
+  p.x := 1.0 ;
+  RETURN p                 (* refused: scratch dies with this frame *)
+END Make ;
+
+VAR q : PTR Point ;
+
+BEGIN
+  q := Make () ;
+  Io.WriteLine ('never compiled')
+END X4Escape.

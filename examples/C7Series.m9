@@ -1,6 +1,6 @@
-MODULE C6Series ;
+MODULE C7Series ;
 
-(* Chapter 6.  A timeseries is a frame plus facts most tables lose:
+(* Chapter 7.  A timeseries is a frame plus facts most tables lose:
    the resolution, whether a stamp names the START, END or MIDDLE of
    its period, and UTC-only time.  Averaging states HOW per column
    -- a mean of the timestamps would be nonsense, so the caller says
@@ -77,4 +77,4 @@ EXCEPT
     Io.ErrLine ('index out of range') ; Io.Halt (1)
 | Overflow :
     Io.ErrLine ('overflow') ; Io.Halt (1)
-END C6Series.
+END C7Series.

@@ -1,6 +1,6 @@
-MODULE C8Plot ;
+MODULE C9Plot ;
 
-(* Chapter 8.  From numbers to a figure: Plot renders SVG as a
+(* Chapter 9.  From numbers to a figure: Plot renders SVG as a
    STRING -- deterministic bytes, which is why the repository can
    hold plots to byte-identity against a Modula-2 oracle.  Here: a
    damped oscillation and its envelope, two labelled series, one
@@ -47,4 +47,4 @@ EXCEPT
     Io.ErrLine ('overflow in the series') ; Io.Halt (1)
 | Io.IOError :
     Io.ErrLine ('cannot write /tmp/damped.svg') ; Io.Halt (1)
-END C8Plot.
+END C9Plot.

@@ -1,6 +1,6 @@
-MODULE C5Stats ;
+MODULE C6Stats ;
 
-(* Chapter 5.  Statistics with real p-values, verified against
+(* Chapter 6.  Statistics with real p-values, verified against
    scipy digit for digit in the library's own gate -- which is why a
    tutorial can print them without hedging.  Two synthetic samples:
    y depends on x almost linearly, and the two groups differ.       *)
@@ -62,4 +62,4 @@ EXCEPT
     Io.ErrLine ('a NaN reached the statistics') ; Io.Halt (1)
 | Overflow :
     Io.ErrLine ('overflow') ; Io.Halt (1)
-END C5Stats.
+END C6Stats.

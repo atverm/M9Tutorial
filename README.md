@@ -58,18 +58,20 @@ Every example is a **complete program**, and each lands one idea:
 | `C2Wrap.m9` | checked `+` raises Overflow, always; wraparound is a different operator, `+%`, visible and greppable |
 | `Temps.m9` | a DEFINITION is a checked contract: exceptions with payloads, complete RAISES lists |
 | `C3Use.m9` | the client's side: the handler that names the module's exception and binds its payload |
-| `C4Csv.m9` | reading data with **declared** column kinds and a declared missing value — nothing inferred |
-| `C5Stats.m9` | mean, percentiles, regression and Welch's t-test with real p-values (gated digit-for-digit against scipy) |
-| `C5Nan.m9` | a NaN in a sample RAISES; skipping gaps is the caller's one visible line |
-| `C6Series.m9` | timeseries with resolution and time convention as data; per-column averaging rules, epoch-aligned windows |
-| `C7Zarr.m9` | a zarr store over HTTP: checked shapes, NaN fills for deleted chunks, ownership that makes use-after-close uncompilable |
-| `C8Plot.m9` | figures as deterministic SVG strings — a plot you can `cmp` |
-| `C9Icos.m9` | the capstone: nine years of real ICOS CO2 (Hyltemossa, 150 m) from the Carbon Portal's zarr service — QC by the station's flags, a Fourier fit of trend + seasonal cycle, plotted.  Point it at `https://zarr.icos-cp.eu/icos-obspack.zarr` and it reads the live service; `examples/data/icos-obspack.zarr` is a raw byte mirror of the same arrays for offline runs (ICOS ObsPack, CC BY 4.0, doi:10.18160/JZ2X-GZGU) |
+| `C4Mem.m9` | memory made visible: pools own storage, slices view it, VAR says who writes, strings are slices of CHAR — with the docstring convention modelled |
+| `C5Csv.m9` | reading data with **declared** column kinds and a declared missing value — nothing inferred |
+| `C6Stats.m9` | mean, percentiles, regression and Welch's t-test with real p-values (gated digit-for-digit against scipy) |
+| `C6Nan.m9` | a NaN in a sample RAISES; skipping gaps is the caller's one visible line |
+| `C7Series.m9` | timeseries with resolution and time convention as data; per-column averaging rules, epoch-aligned windows |
+| `C8Zarr.m9` | a zarr store over HTTP: checked shapes, NaN fills for deleted chunks, ownership that makes use-after-close uncompilable |
+| `C9Plot.m9` | figures as deterministic SVG strings — a plot you can `cmp` |
+| `C10Icos.m9` | the capstone: nine years of real ICOS CO2 (Hyltemossa, 150 m) from the Carbon Portal's zarr service — QC by the station's flags, a Fourier fit of trend + seasonal cycle, plotted.  Point it at `https://zarr.icos-cp.eu/icos-obspack.zarr` and it reads the live service; `examples/data/icos-obspack.zarr` is a raw byte mirror of the same arrays for offline runs (ICOS ObsPack, CC BY 4.0, doi:10.18160/JZ2X-GZGU) |
 
 The four `X*.m9` files must **not** compile — each carries an
 `EXPECT-ERROR` line naming the diagnostic the compiler must give:
 implicit conversion refused, an undeclared RAISES, a signature that
-drifts from its definition, a promised procedure never implemented.
+drifts from its definition, a promised procedure never implemented,
+a pool-interior pointer escaping the frame that owns it.
 
 `expect/` holds the exact output of every runnable example; the
 upstream repository's CI compiles and runs all of them on every

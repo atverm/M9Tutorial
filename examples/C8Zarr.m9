@@ -1,6 +1,6 @@
-MODULE C7Zarr ;
+MODULE C8Zarr ;
 
-(* Chapter 7.  Zarr over HTTP: a chunked array store is opened by
+(* Chapter 8.  Zarr over HTTP: a chunked array store is opened by
    URL, sliced by index, and every byte that arrives is checked --
    the shape from .zarray, the compression, the fill value.  The
    store here is local (the sandbox has no network by design); the
@@ -70,4 +70,4 @@ EXCEPT
 | IndexError :
     Io.ErrLine ('index out of range') ;
     Io.Halt (1)
-END C7Zarr.
+END C8Zarr.

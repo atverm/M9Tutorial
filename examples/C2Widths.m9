@@ -12,6 +12,11 @@ MODULE C2Widths ;
 IMPORT Io ;
 
 PROCEDURE TryI32 (v: I64) =
+  (* narrows v to 32 bits, reporting instead of propagating.
+
+       v -- any I64; whether it fits I32 is exactly what the
+            conversion checks.  This comment block is a DOCSTRING:
+            m9c --doc renders it, chapter 3 shows where.            *)
 VAR n : I32 ;
 BEGIN
   n := I32 (v) ;

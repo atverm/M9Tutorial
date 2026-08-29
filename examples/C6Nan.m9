@@ -1,6 +1,6 @@
-MODULE C5Nan ;
+MODULE C6Nan ;
 
-(* Chapter 5.  A NaN in a sample RAISES -- the mean of [1, NaN, 3]
+(* Chapter 6.  A NaN in a sample RAISES -- the mean of [1, NaN, 3]
    is not a number, and a library that answers one anyway (or
    silently skips the gap) has decided your science for you.  The
    skipping, when you mean it, is the caller's one visible line.    *)
@@ -25,4 +25,4 @@ EXCEPT
     Io.WriteLine ('Stats.Mean refused the NaN (ValueRange)')
 | Stats.TooFew :
     Io.WriteLine ('sample too small')
-END C5Nan.
+END C6Nan.

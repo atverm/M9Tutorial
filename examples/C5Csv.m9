@@ -1,6 +1,6 @@
-MODULE C4Csv ;
+MODULE C5Csv ;
 
-(* Chapter 4.  Reading data: the caller DECLARES what each column
+(* Chapter 5.  Reading data: the caller DECLARES what each column
    is; nothing is inferred from the first thousand rows.  The missing
    value is stated too, and becomes NaN -- which floats carry
    honestly and conversions refuse.
@@ -80,4 +80,4 @@ EXCEPT
 | Stats.TooFew :
     Io.ErrLine ('no valid readings') ;
     Io.Halt (1)
-END C4Csv.
+END C5Csv.
