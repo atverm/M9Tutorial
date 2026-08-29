@@ -19,7 +19,7 @@ VAR
   scratch : POOL ;
   p : PTR Point IN scratch ;
 BEGIN
-  p := NEW (Point, scratch) ;
+  p := NEW (scratch, Point) ;
   p.x := 1.0 ;
   RETURN p                 (* refused: scratch dies with this frame *)
 END Make ;
