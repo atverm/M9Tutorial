@@ -40,11 +40,19 @@ cite ICOS when you use it.
 
 ## Install
 
-Download [`m9_0.3.0_amd64.deb`](m9_0.3.0_amd64.deb) and:
+The [release page](https://github.com/atverm/M9Tutorial/releases/tag/v0.3.0)
+carries one package per distribution — Ubuntu 24.04, Debian 13,
+Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 — each built on
+that distribution from the one attached source tarball and made to
+compile and run an M9 program there before it was published; the
+`.receipt` beside each says on what, with which gcc, and its sha256.
+gcc is the only compiler any of them needs.  For Ubuntu 24.04:
 
-    sudo apt install ./m9_0.3.0_amd64.deb
+    sudo apt install ./m9_0.3.0_amd64.ubuntu24.04.deb
 
-This installs `m9c` (the compiler), the runtime, the standard
+(`dnf install ./m9-0.3.0-1.fc43.x86_64.rpm`, `./m9-0.3.0-1.el9.x86_64.rpm`,
+`pacman -U ./m9-0.3.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
+of the tutorial has the whole table.)  This installs `m9c` (the compiler), the runtime, the standard
 library as readable M9 source in `/usr/lib/m9`, per-module reference
 pages in `/usr/share/doc/m9/modules`, `man m9c`, and a VS Code
 extension (syntax highlighting, hover documentation, completion) at

@@ -8,16 +8,29 @@ and a CI gate builds the whole thing on a machine where every other
 compiler has been replaced by a script that fails loudly — so the
 claim is tested, not asserted.
 
-## Route 1: the Debian package
+## Route 1: the install package
 
-Download
-[`m9_0.3.0_amd64.deb`](https://github.com/atverm/M9Tutorial/raw/main/m9_0.3.0_amd64.deb)
-from the [M9Tutorial repository](https://github.com/atverm/M9Tutorial)
-— which also holds every example in these chapters — and:
+The [release page](https://github.com/atverm/M9Tutorial/releases/tag/v0.3.0)
+of the [M9Tutorial repository](https://github.com/atverm/M9Tutorial)
+— which also holds every example in these chapters — carries one
+package per distribution, x86-64, each built ON that distribution
+from the same source tarball:
 
-    sudo apt install ./m9_0.3.0_amd64.deb
+| distribution | package | install |
+|---|---|---|
+| Ubuntu 24.04 LTS | `m9_0.3.0_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.3.0_amd64.ubuntu24.04.deb` |
+| Debian 13 | `m9_0.3.0_amd64.debian13.deb` | `sudo apt install ./m9_0.3.0_amd64.debian13.deb` |
+| Fedora 43 | `m9-0.3.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.3.0-1.fc43.x86_64.rpm` |
+| Rocky 9 (RHEL 9, Alma 9) | `m9-0.3.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.3.0-1.el9.x86_64.rpm` |
+| Arch | `m9-0.3.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.3.0-1-x86_64.pkg.tar.zst` |
 
-This puts `m9c` in `/usr/bin`, the runtime header in
+Each package comes with a `.receipt` beside it — the distribution it
+was built on, its sha256, the tarball it came from, the gcc that
+built it, and the line proving the installed compiler compiled and
+ran a program with an empty environment.  What is on the page is
+what came back from the build machine, unchanged.
+
+Any of them puts `m9c` in `/usr/bin`, the runtime header in
 `/usr/include/m9`, the runtime archive at `/usr/lib/libm9rt.a`, and
 the standard library — as M9 SOURCE, because a readable library is
 part of the point — in `/usr/lib/m9`, which the compiler searches
@@ -25,9 +38,9 @@ without any variable being set.  The per-module reference pages land
 in `/usr/share/doc/m9/modules`, the language report beside them, and
 `man m9c` works.
 
-The package is built on Ubuntu 26.04 for amd64, and a deb names
-its distribution's library versions — on another release, build the
-package there (`dpkg-buildpackage -us -uc -b`) or use route 2.
+The two debs are different files — a deb names its distribution's
+library versions — so take the one for your distribution.  On any
+other distribution or release, route 2 is a two-line build.
 
 ## Route 2: from source
 
