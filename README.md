@@ -64,6 +64,7 @@ Every example is a **complete program**, and each lands one idea:
 | `C6Series.m9` | timeseries with resolution and time convention as data; per-column averaging rules, epoch-aligned windows |
 | `C7Zarr.m9` | a zarr store over HTTP: checked shapes, NaN fills for deleted chunks, ownership that makes use-after-close uncompilable |
 | `C8Plot.m9` | figures as deterministic SVG strings — a plot you can `cmp` |
+| `C9Icos.m9` | the capstone: nine years of real ICOS CO2 (Hyltemossa, 150 m) from the Carbon Portal's zarr service — QC by the station's flags, a Fourier fit of trend + seasonal cycle, plotted.  Point it at `https://zarr.icos-cp.eu/icos-obspack.zarr` and it reads the live service; `examples/data/icos-obspack.zarr` is a raw byte mirror of the same arrays for offline runs (ICOS ObsPack, CC BY 4.0, doi:10.18160/JZ2X-GZGU) |
 
 The four `X*.m9` files must **not** compile — each carries an
 `EXPECT-ERROR` line naming the diagnostic the compiler must give:

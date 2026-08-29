@@ -1,0 +1,7 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time_co2"
+    ],
+    "comment": "- Flag U = data correct before manual quality control - Flag O = data correct after manual quality control, other flags denote incorrect data. Data processing at ICOS ATC is described in [Hazan et al., 2016], doi:10.5194/amt-9-4719-2016.",
+    "long_name": "quality_control_flag"
+}

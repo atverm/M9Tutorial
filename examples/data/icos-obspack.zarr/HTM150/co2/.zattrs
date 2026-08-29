@@ -1,0 +1,12 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time_co2"
+    ],
+    "ancillary_variables": "co2_qc_flag",
+    "calibration_scale": "WMO CO2 X2019",
+    "comment": "mole per mole of dry air",
+    "long_name": "CO2 dry-air mole fraction",
+    "scale_comment": "WMO CO2 X2019",
+    "standard_name": "mole_fraction_of_co2_in_dry_air",
+    "units": "ppm"
+}
