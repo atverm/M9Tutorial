@@ -253,6 +253,8 @@ semiannual         2.62
 wrote /tmp/htm.svg, 3748547 bytes
 ```
 
+![nine years of CO2 at Hyltemossa: every QC-passed hour a dot, the monthly means and the six-coefficient Fourier fit over them](../examples/expect/htm.svg)
+
 
 What the numbers say: CO2 at Hyltemossa climbs about 2.5 umol/mol a
 year, and the forest breathes an 18 umol/mol seasonal swing around

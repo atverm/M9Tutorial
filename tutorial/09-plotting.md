@@ -66,6 +66,8 @@ END C9Plot.
 wrote /tmp/damped.svg, 7847 bytes
 ```
 
+![the damped oscillation, exactly as the program wrote it](../examples/expect/damped.svg)
+
 The API is the smallest one that earns its keep: `ClearFigure`,
 `AddLine (xs, ys, colorIndex, label)` up to four labelled series,
 `Render (pool, title, xlabel, ylabel)` — axes scaled and ticked
