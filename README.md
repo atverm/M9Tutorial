@@ -19,8 +19,24 @@ example on those pages is editable and runs, sandboxed, on the
 server; what you read here is the same material, gated by the same
 tests.
 
-This repository holds the tutorial's example programs and the M9
-compiler package.
+The tutorial service is, of course, **written entirely in M9** —
+the HTTP server, the compile-and-run sandbox pipeline, the whole
+backend — with a little JavaScript on the frontend for the editable
+cells.  Serving the tutorial with the language it teaches is the
+claim made structural.
+
+This repository holds the tutorial's example programs, the full
+tutorial text ([`tutorial/`](tutorial/README.md), the same chapters
+the site serves), and the M9 compiler package.
+
+## License
+
+Code — the examples, the tutorial text, the M9 compiler in the
+package — is licensed under the **GNU GPL v3** (see
+[LICENSE](LICENSE)).  The measurement data in
+`examples/data/icos-obspack.zarr` remains **CC BY 4.0** by the ICOS
+data licence ([doi:10.18160/JZ2X-GZGU](https://doi.org/10.18160/JZ2X-GZGU));
+cite ICOS when you use it.
 
 ## Install
 
