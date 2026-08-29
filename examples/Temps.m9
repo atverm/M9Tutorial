@@ -1,0 +1,49 @@
+DEFINITION MODULE Temps ;
+
+(* Chapter 3's library: temperature conversions with a floor.  The
+   definition IS the contract -- what exists, what it needs, and
+   exactly what can go wrong.  The RAISES list is not documentation
+   that can rot: the checker proves the implementation raises
+   nothing the definition did not admit to.                         *)
+
+EXCEPTION
+  TooCold (got, limit: F64) ;
+
+PROCEDURE ToKelvin (celsius: F64) : F64 RAISES TooCold ;
+  (* refuses anything below absolute zero.
+
+       celsius -- the reading as measured; -273.15 is the floor,
+                  and the exception carries both it and the value
+                  that broke it.                                    *)
+
+PROCEDURE Mean (RO readings: SLICE OF F64) : F64 RAISES TooCold ;
+  (* the mean of a series, every element validated on the way in.  *)
+
+END Temps.
+
+IMPLEMENTATION MODULE Temps ;
+
+CONST
+  Zero = 273.15 ;
+
+PROCEDURE ToKelvin (celsius: F64) : F64 RAISES TooCold =
+BEGIN
+  IF celsius < 0.0 - Zero THEN
+    RAISE TooCold (celsius, 0.0 - Zero)
+  END ;
+  RETURN celsius + Zero
+END ToKelvin ;
+
+PROCEDURE Mean (RO readings: SLICE OF F64) : F64 RAISES TooCold =
+VAR
+  sum : F64 ;
+  i   : I64 ;
+BEGIN
+  sum := 0.0 ;
+  FOR i := 0 TO LEN (readings) - 1 DO
+    sum := sum + ToKelvin (readings [i])
+  END ;
+  RETURN sum / F64 (LEN (readings))
+END Mean ;
+
+END Temps.

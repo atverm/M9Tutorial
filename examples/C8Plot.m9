@@ -1,0 +1,50 @@
+MODULE C8Plot ;
+
+(* Chapter 8.  From numbers to a figure: Plot renders SVG as a
+   STRING -- deterministic bytes, which is why the repository can
+   hold plots to byte-identity against a Modula-2 oracle.  Here: a
+   damped oscillation and its envelope, two labelled series, one
+   file, no plotting daemon anywhere.
+
+   Plot is the corpus' one STATEFUL module: AddLine accumulates
+   into a module-level figure, which is why the definition says
+   STATEFUL and a thread may not touch it while another draws.      *)
+
+IMPORT Io ;
+IMPORT Math ;
+IMPORT Plot ;
+
+CONST
+  N = 200 ;
+
+VAR
+  pool   : POOL ;
+  xs     : ARRAY 200 OF F64 ;
+  ys, es : ARRAY 200 OF F64 ;
+  i      : I64 ;
+  t      : F64 ;
+  svg    : STR ;
+
+BEGIN
+  FOR i := 0 TO N - 1 DO
+    t := F64 (i) * 0.05 ;
+    xs [i] := t ;
+    es [i] := Math.Exp (0.0 - 0.3 * t) ;
+    ys [i] := es [i] * Math.Cos (3.0 * t)
+  END ;
+  Plot.ClearFigure () ;
+  Plot.AddLine (xs, ys, 0, 'signal') ;
+  Plot.AddLine (xs, es, 1, 'envelope') ;
+  svg := Plot.Render (pool, 'damped oscillation', 'time (s)', 'amplitude') ;
+  Io.WriteFile ('/tmp/damped.svg', svg) ;
+  Io.Write ('wrote /tmp/damped.svg, ') ;
+  Io.WriteI64 (LEN (svg)) ;
+  Io.WriteLine (' bytes')
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('rendering failed') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow in the series') ; Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot write /tmp/damped.svg') ; Io.Halt (1)
+END C8Plot.

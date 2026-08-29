@@ -1,0 +1,65 @@
+MODULE C5Stats ;
+
+(* Chapter 5.  Statistics with real p-values, verified against
+   scipy digit for digit in the library's own gate -- which is why a
+   tutorial can print them without hedging.  Two synthetic samples:
+   y depends on x almost linearly, and the two groups differ.       *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Stats ;
+
+PROCEDURE P (RO label: STR ; v: F64 ; dec: I64) =
+VAR pool : POOL ;
+BEGIN
+  Io.Write (label) ;
+  Io.Write (Fmt.Fixed (pool, v, dec)) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('formatting failed') ;
+    Io.Halt (1)
+END P ;
+
+VAR
+  x, y : ARRAY 8 OF F64 ;
+  a, b : ARRAY 6 OF F64 ;
+  i    : I64 ;
+  reg  : Stats.Reg ;
+  tst  : Stats.Test ;
+
+BEGIN
+  FOR i := 0 TO 7 DO
+    x [i] := F64 (i) ;
+    y [i] := 2.0 + 0.5 * F64 (i)
+  END ;
+  y [3] := y [3] + 0.4 ;             (* one imperfect point *)
+  P ('mean y    ', Stats.Mean (y), 4) ;
+  P ('std y     ', Stats.Std (y), 4) ;
+  P ('median y  ', Stats.Median (y), 4) ;
+  P ('p90 y     ', Stats.Percentile (y, 90.0), 4) ;
+
+  reg := Stats.LinReg (x, y) ;
+  P ('slope     ', reg.slope, 4) ;
+  P ('intercept ', reg.intercept, 4) ;
+  P ('r         ', reg.r, 4) ;
+  P ('p         ', reg.p, 8) ;
+
+  a [0] := 5.1 ; a [1] := 4.9 ; a [2] := 5.3 ;
+  a [3] := 5.0 ; a [4] := 5.2 ; a [5] := 4.8 ;
+  FOR i := 0 TO 5 DO
+    b [i] := a [i] + 0.6                (* shifted group *)
+  END ;
+  tst := Stats.TTest2 (a, b) ;
+  P ('Welch t   ', tst.t, 4) ;
+  P ('p         ', tst.p, 6)
+EXCEPT
+| Stats.TooFew :
+    Io.ErrLine ('sample too small') ; Io.Halt (1)
+| Stats.BadArg :
+    Io.ErrLine ('bad argument') ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a NaN reached the statistics') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow') ; Io.Halt (1)
+END C5Stats.

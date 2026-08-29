@@ -1,0 +1,83 @@
+MODULE C4Csv ;
+
+(* Chapter 4.  Reading data: the caller DECLARES what each column
+   is; nothing is inferred from the first thousand rows.  The missing
+   value is stated too, and becomes NaN -- which floats carry
+   honestly and conversions refuse.
+
+   The pool rule (docs/pools.md): storage that outlives a call takes
+   the pool as a parameter, so "who frees this?" is answered in the
+   signature.  This whole program uses one pool that dies with it.  *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Csv ;
+IMPORT Time ;
+IMPORT Stats ;
+
+VAR
+  pool  : POOL ;
+  opt   : Csv.Options ;
+  t     : PTR Csv.Table ;
+  temp  : SLICE OF F32 ;
+  stamp : SLICE OF Time.Instant ;
+  buf   : ARRAY 64 OF F64 ;
+  n, i  : I64 ;
+  x     : F64 ;
+
+BEGIN
+  opt := Csv.Defaults () ;
+  opt.missing := -9999.0 ;         (* the file's own convention *)
+  opt.hasMissing := TRUE ;
+  t := Csv.Open (pool, 'data/obs.csv', opt) ;
+  Csv.SetStamp (t, 0, Csv.StampYmdHm) ;
+  Csv.SetReal (t, 1) ;
+  Csv.Parse (pool, t) ;
+
+  stamp := Csv.ColStamp (t, 0) ;
+  temp := Csv.ColF32 (t, 1) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (temp) - 1 DO
+    x := F64 (temp [i]) ;          (* widths convert EXPLICITLY *)
+    IF x = x THEN                  (* NaN is the one value # itself *)
+      buf [n] := x ;
+      n := n + 1
+    END
+  END ;
+
+  Io.Write ('rows ') ;
+  Io.WriteI64 (Csv.Rows (t)) ;
+  Io.Write (', valid ') ;
+  Io.WriteI64 (n) ;
+  Io.WriteLine ('') ;
+  Io.Write ('window ') ;
+  Io.Write (Time.Iso (pool, stamp [0], 0)) ;
+  Io.Write (' .. ') ;
+  Io.WriteLine (Time.Iso (pool, stamp [LEN (stamp) - 1], 0)) ;
+  Io.Write ('mean TA ') ;
+  Io.Write (Fmt.Fixed (pool, Stats.Mean (SLICE (buf, 0, n)), 3)) ;
+  Io.WriteLine (' degC')
+EXCEPT
+| Csv.ParseError (msg, line, col) :
+    Io.ErrLine ('CSV refused:') ;
+    Io.ErrLine (msg) ;
+    Io.Halt (1)
+| Csv.RangeError (row, col) :
+    Io.ErrLine ('CSV value out of range') ;
+    Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot read data/obs.csv (run from examples/)') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value did not fit') ;
+    Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('index out of range') ;
+    Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('index out of range') ;
+    Io.Halt (1)
+| Stats.TooFew :
+    Io.ErrLine ('no valid readings') ;
+    Io.Halt (1)
+END C4Csv.

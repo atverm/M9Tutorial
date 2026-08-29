@@ -1,0 +1,20 @@
+DEFINITION MODULE X3Missing ;
+
+(* EXPECT-ERROR: not implemented *)
+(* Chapter 3, a module that must NOT compile.  A definition is a
+   promise; an implementation that omits a promised procedure is
+   refused, so "TODO" cannot ship silently.                         *)
+
+PROCEDURE ToKelvin (celsius: F64) : F64 ;
+PROCEDURE ToFahrenheit (celsius: F64) : F64 ;
+
+END X3Missing.
+
+IMPLEMENTATION MODULE X3Missing ;
+
+PROCEDURE ToKelvin (celsius: F64) : F64 =
+BEGIN
+  RETURN celsius + 273.15
+END ToKelvin ;
+
+END X3Missing.

@@ -1,0 +1,73 @@
+MODULE C7Zarr ;
+
+(* Chapter 7.  Zarr over HTTP: a chunked array store is opened by
+   URL, sliced by index, and every byte that arrives is checked --
+   the shape from .zarray, the compression, the fill value.  The
+   store here is local (the sandbox has no network by design); the
+   same call with a portal URL is how the ICOS data is read.
+
+   Ownership: Open answers a SHARED handle and Close consumes it --
+   the checker refuses a use after Close, so a leaked store is not a
+   silent bug but an uncompilable one.                              *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT ZarrStore ;
+
+VAR
+  pool : POOL ;
+  st   : SHARED PTR ZarrStore.Store ;
+  a    : PTR ZarrStore.Array ;
+  idx  : ARRAY 2 OF I64 ;
+  url  : STR ;
+  x    : F64 ;
+
+PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i, j: I64) : F64
+  RAISES ZarrStore.IOError =
+VAR ix : ARRAY 2 OF I64 ;
+BEGIN
+  ix [0] := i ;
+  ix [1] := j ;
+  RETURN ZarrStore.GetF64 (arr, ix)
+END At ;
+
+BEGIN
+  IF Io.ArgCount () > 1 THEN
+    url := Io.Arg (pool, 1)
+  ELSE
+    url := 'http://127.0.0.1:18931'
+  END ;
+  st := ZarrStore.Open (url) ;
+  a := ZarrStore.OpenArray (st, 'co2.zarr') ;
+
+  Io.Write ('shape ') ;
+  Io.WriteI64 (ZarrStore.Extent (a, 0)) ;
+  Io.Write (' x ') ;
+  Io.WriteI64 (ZarrStore.Extent (a, 1)) ;
+  Io.WriteLine ('') ;
+
+  Io.WriteLine ('co2[0,0]   = ' + Fmt.Fixed (pool, At (a, 0, 0), 10)) ;
+  Io.WriteLine ('co2[99,49] = ' + Fmt.Fixed (pool, At (a, 99, 49), 10)) ;
+  x := At (a, 10, 5) ;
+  IF x = x THEN
+    Io.WriteLine ('co2[10,5]  = ' + Fmt.Fixed (pool, x, 10))
+  ELSE
+    Io.WriteLine ('co2[10,5]  is a gap (deleted chunk, NaN fill)')
+  END ;
+
+  ZarrStore.CloseArray (a) ;
+  ZarrStore.Close (st)
+EXCEPT
+| ZarrStore.IOError :
+    Io.ErrLine ('store unreachable -- is the local server running?') ;
+    Io.Halt (1)
+| ZarrStore.FormatError (what) :
+    Io.ErrLine ('not a zarr v2 store') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value did not fit') ;
+    Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('index out of range') ;
+    Io.Halt (1)
+END C7Zarr.

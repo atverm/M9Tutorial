@@ -1,0 +1,21 @@
+MODULE X2Assign ;
+
+(* EXPECT-ERROR: cannot assign F64 to I64 *)
+(* Chapter 2, a program that must NOT compile.  There are no
+   implicit conversions, not even the "safe" widening ones: if two
+   widths meet, the program says which one wins, or the checker
+   refuses.  gm2's LONGREAL was x87 long double striding 16 bytes
+   over 8-byte wire doubles -- silently.  This is the rule that
+   makes that failure uncompilable.                                 *)
+
+IMPORT Io ;
+
+VAR
+  i : I64 ;
+  x : F64 ;
+
+BEGIN
+  x := 2.5 ;
+  i := x ;                 (* refused: no implicit F64 -> I64 *)
+  Io.WriteI64 (i)
+END X2Assign.

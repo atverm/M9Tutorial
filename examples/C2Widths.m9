@@ -1,0 +1,45 @@
+MODULE C2Widths ;
+
+(* Chapter 2.  Every integer and real type names its exact width --
+   I64, I32, F64, F32 -- and nothing converts by itself.  A
+   conversion is a call, the call can fail, and a failing conversion
+   RAISES instead of wrapping, truncating, or inventing INT64_MIN
+   the way a NaN truncation silently does elsewhere.
+
+   Each probe carries its own EXCEPT block: a handler belongs to the
+   frame that knows what failure means there.                       *)
+
+IMPORT Io ;
+
+PROCEDURE TryI32 (v: I64) =
+VAR n : I32 ;
+BEGIN
+  n := I32 (v) ;
+  Io.Write ('I32 fits: ') ;
+  Io.WriteI64 (I64 (n)) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    Io.Write ('I32 (') ;
+    Io.WriteI64 (v) ;
+    Io.WriteLine (') raised ValueRange')
+END TryI32 ;
+
+PROCEDURE TryTruncNan () =
+VAR
+  x : F64 ;
+  k : I64 ;
+BEGIN
+  x := 0.0 / 0.0 ;        (* NaN travels freely in floats ... *)
+  k := I64 (x) ;          (* ... and raises at the integer boundary *)
+  Io.WriteI64 (k)
+EXCEPT
+| ValueRange :
+    Io.WriteLine ('I64 (NaN) raised ValueRange')
+END TryTruncNan ;
+
+BEGIN
+  TryI32 (2000000000) ;
+  TryI32 (3000000000) ;
+  TryTruncNan ()
+END C2Widths.

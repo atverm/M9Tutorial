@@ -1,0 +1,80 @@
+MODULE C6Series ;
+
+(* Chapter 6.  A timeseries is a frame plus facts most tables lose:
+   the resolution, whether a stamp names the START, END or MIDDLE of
+   its period, and UTC-only time.  Averaging states HOW per column
+   -- a mean of the timestamps would be nonsense, so the caller says
+   First there and Mean for the data, and the windows are aligned to
+   the epoch exactly as polars' group_by_dynamic aligns them.       *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Csv ;
+IMPORT Time ;
+IMPORT Frame ;
+
+VAR
+  pool   : POOL ;
+  opt    : Csv.Options ;
+  t      : PTR Csv.Table ;
+  fr     : PTR Frame.Fr ;
+  ts, hr : PTR Frame.Ts ;
+  hows   : SLICE OF Frame.How ;
+  tm     : SLICE OF I64 ;
+  ta     : SLICE OF F64 ;
+  i      : I64 ;
+  stamp  : Time.Instant ;
+
+BEGIN
+  opt := Csv.Defaults () ;
+  opt.missing := -9999.0 ;
+  opt.hasMissing := TRUE ;
+  t := Csv.Open (pool, 'data/obs.csv', opt) ;
+  Csv.SetStamp (t, 0, Csv.StampYmdHm) ;
+  Csv.SetReal (t, 1) ;
+  Csv.Parse (pool, t) ;
+
+  fr := Frame.FromCsv (pool, t) ;
+  ts := Frame.NewTs (pool, fr, Frame.ColI64 (fr, 'TIMESTAMP'),
+                     1800, Frame.ConvStart (), 'half-hourly TA') ;
+
+  hows := NEW (pool, Frame.How, 2) ;
+  hows [0] := Frame.HowFirst () ;      (* TIMESTAMP *)
+  hows [1] := Frame.HowMean () ;       (* TA        *)
+  hr := Frame.Average (pool, ts, 3600, hows, 1) ;
+
+  tm := Frame.TsTime (hr) ;
+  ta := Frame.ColF64 (Frame.TsFrame (hr), 'TA') ;
+  FOR i := 0 TO LEN (tm) - 1 DO
+    stamp.t := F64 (tm [i]) ;
+    Io.Write (Time.Iso (pool, stamp, 0)) ;
+    Io.Write ('  ') ;
+    Io.WriteLine (Fmt.Fixed (pool, ta [i], 3))
+  END
+EXCEPT
+| Csv.ParseError (msg, line, col) :
+    Io.ErrLine ('CSV refused:') ; Io.ErrLine (msg) ; Io.Halt (1)
+| Csv.RangeError (row, col) :
+    Io.ErrLine ('CSV value out of range') ; Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot read data/obs.csv (run from examples/)') ;
+    Io.Halt (1)
+| Frame.WrongType :
+    Io.ErrLine ('column type mismatch') ; Io.Halt (1)
+| Frame.Unknown :
+    Io.ErrLine ('no such column') ; Io.Halt (1)
+| Frame.BadArg :
+    Io.ErrLine ('bad argument') ; Io.Halt (1)
+| Frame.SizeError :
+    Io.ErrLine ('sizes disagree') ; Io.Halt (1)
+| Frame.Disorder :
+    Io.ErrLine ('time is not ascending') ; Io.Halt (1)
+| Frame.Duplicate :
+    Io.ErrLine ('duplicate column') ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value did not fit') ; Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('index out of range') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow') ; Io.Halt (1)
+END C6Series.

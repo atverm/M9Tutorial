@@ -1,0 +1,33 @@
+MODULE C2Wrap ;
+
+(* Chapter 2.  `+` on integers is CHECKED: overflow raises, always,
+   because that is what the operator means -- there is no release
+   mode where it stops meaning that.  When wrapping is what you
+   want, say so: `+%` is a different operator, defined modulo 2^64,
+   and a reader can grep for the percent sign.                      *)
+
+IMPORT Io ;
+
+PROCEDURE Checked (a, b: I64) =
+VAR s : I64 ;
+BEGIN
+  s := a + b ;
+  Io.Write ('a + b = ') ;
+  Io.WriteI64 (s) ;
+  Io.WriteLine ('')
+EXCEPT
+| Overflow :
+    Io.WriteLine ('a + b raised Overflow')
+END Checked ;
+
+VAR
+  top : I64 ;
+
+BEGIN
+  top := MAX (I64) ;
+  Checked (top, 0) ;
+  Checked (top, 1) ;             (* checked: refuses *)
+  Io.Write ('top +% 1 = ') ;
+  Io.WriteI64 (top +% 1) ;       (* wrapping: stated in the operator *)
+  Io.WriteLine ('')
+END C2Wrap.

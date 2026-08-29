@@ -1,0 +1,34 @@
+MODULE C3Use ;
+
+(* Chapter 3.  A client sees only the definition: Temps.ToKelvin can
+   raise TooCold and the checker will not let this program pretend
+   otherwise -- the handler below is not politeness, it is what made
+   the module compile.  The payload binds by name and position, so
+   the message can say WHICH value broke WHAT limit.                *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Temps ;
+
+VAR
+  pool : POOL ;
+  r    : ARRAY 3 OF F64 ;
+
+BEGIN
+  r [0] := 5.5 ;  r [1] := -2.0 ;  r [2] := 11.25 ;
+  Io.Write ('mean of the series: ') ;
+  Io.Write (Fmt.Fixed (pool, Temps.Mean (r), 2)) ;
+  Io.WriteLine (' K') ;
+  r [1] := -300.0 ;                (* not a temperature *)
+  Io.Write (Fmt.Fixed (pool, Temps.Mean (r), 2)) ;
+  Io.WriteLine (' never printed')
+EXCEPT
+| Temps.TooCold (got, limit) :
+    Io.Write ('TooCold: ') ;
+    Io.Write (Fmt.Fixed (pool, got, 1)) ;
+    Io.Write (' is below ') ;
+    Io.WriteLine (Fmt.Fixed (pool, limit, 2))
+| ValueRange :
+    Io.ErrLine ('formatting failed') ;
+    Io.Halt (1)
+END C3Use.

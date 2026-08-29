@@ -1,0 +1,31 @@
+MODULE C1Bounds ;
+
+(* Chapter 1.  The bug that founded the language: a GNU Modula-2
+   build at -O2 EXECUTED a[42] on an array of ten and printed
+   "unreachable".  In M9 the check is part of what the program
+   MEANS, not a compiler flag: this loop runs off the end on
+   purpose, and the access raises IndexError instead of reading
+   whatever lies past the array.                                    *)
+
+IMPORT Io ;
+
+VAR
+  a   : ARRAY 10 OF I64 ;
+  i   : I64 ;
+  sum : I64 ;
+
+BEGIN
+  FOR i := 0 TO 9 DO
+    a [i] := i * i
+  END ;
+  sum := 0 ;
+  FOR i := 0 TO 12 DO      (* three past the end, deliberately *)
+    sum := sum + a [i]
+  END ;
+  Io.WriteLine ('never reached')
+EXCEPT
+| IndexError :
+    Io.Write ('IndexError refused the read; the sum so far was ') ;
+    Io.WriteI64 (sum) ;
+    Io.WriteLine ('')
+END C1Bounds.

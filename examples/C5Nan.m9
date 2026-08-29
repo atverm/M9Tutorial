@@ -1,0 +1,28 @@
+MODULE C5Nan ;
+
+(* Chapter 5.  A NaN in a sample RAISES -- the mean of [1, NaN, 3]
+   is not a number, and a library that answers one anyway (or
+   silently skips the gap) has decided your science for you.  The
+   skipping, when you mean it, is the caller's one visible line.    *)
+
+IMPORT Io ;
+IMPORT Stats ;
+IMPORT Fmt ;
+
+VAR
+  pool : POOL ;
+  xs   : ARRAY 3 OF F64 ;
+  m    : F64 ;
+
+BEGIN
+  xs [0] := 1.0 ;
+  xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
+  xs [2] := 3.0 ;
+  m := Stats.Mean (xs) ;
+  Io.WriteLine ('mean = ' + Fmt.Fixed (pool, m, 3))
+EXCEPT
+| ValueRange :
+    Io.WriteLine ('Stats.Mean refused the NaN (ValueRange)')
+| Stats.TooFew :
+    Io.WriteLine ('sample too small')
+END C5Nan.

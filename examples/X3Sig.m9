@@ -1,0 +1,21 @@
+DEFINITION MODULE X3Sig ;
+
+(* EXPECT-ERROR: signature differs from definition *)
+(* Chapter 3, a module that must NOT compile.  The definition says
+   ToKelvin takes an F64; the implementation drifts to F32.  In a
+   dynamic language this is a latent runtime surprise; here the two
+   halves are compared as canonical signatures and the drift is a
+   compile error naming the procedure.                              *)
+
+PROCEDURE ToKelvin (celsius: F64) : F64 ;
+
+END X3Sig.
+
+IMPLEMENTATION MODULE X3Sig ;
+
+PROCEDURE ToKelvin (celsius: F32) : F64 =
+BEGIN
+  RETURN F64 (celsius) + 273.15
+END ToKelvin ;
+
+END X3Sig.

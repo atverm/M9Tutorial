@@ -1,0 +1,25 @@
+MODULE C1Hello ;
+
+(* Chapter 1.  A program is a MODULE whose body becomes the entry
+   point.  The EXCEPT block at the bottom is the root of the whole
+   error story: any exception nothing below handled arrives here,
+   and a program says what it does about failure at the one frame
+   with no caller left to tell.                                     *)
+
+IMPORT Io ;
+
+VAR
+  i : I64 ;
+
+BEGIN
+  Io.WriteLine ('hello from M9') ;
+  FOR i := 1 TO 3 DO
+    Io.Write ('measurement ') ;
+    Io.WriteI64 (i) ;
+    Io.WriteLine ('')
+  END
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('a value did not fit') ;
+    Io.Halt (1)
+END C1Hello.

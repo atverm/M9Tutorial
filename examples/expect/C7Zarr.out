@@ -1,0 +1,4 @@
+shape 100 x 50
+co2[0,0]   = 394.9816047539
+co2[99,49] = 403.8924951332
+co2[10,5]  is a gap (deleted chunk, NaN fill)
