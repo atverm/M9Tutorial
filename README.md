@@ -13,6 +13,12 @@ language for code written by AI agents, for human programmers — and
 above all for the human reviewer who has to certify work she did not
 write.
 
+**The tutorial is live at
+[tutorial.modula9.net](https://tutorial.modula9.net)** — every code
+example on those pages is editable and runs, sandboxed, on the
+server; what you read here is the same material, gated by the same
+tests.
+
 This repository holds the tutorial's example programs and the M9
 compiler package.
 
