@@ -41,8 +41,9 @@ cite ICOS when you use it.
 ## Install
 
 The [release page](https://github.com/atverm/M9Tutorial/releases/tag/v0.3.0)
-carries one package per distribution — Ubuntu 24.04, Debian 13,
-Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 — each built on
+carries one package per distribution — Ubuntu 24.04 and 26.04,
+Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
+each built on
 that distribution from the one attached source tarball and made to
 compile and run an M9 program there before it was published; the
 `.receipt` beside each says on what, with which gcc, and its sha256.

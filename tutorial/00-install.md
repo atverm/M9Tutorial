@@ -19,6 +19,7 @@ from the same source tarball:
 | distribution | package | install |
 |---|---|---|
 | Ubuntu 24.04 LTS | `m9_0.3.0_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.3.0_amd64.ubuntu24.04.deb` |
+| Ubuntu 26.04 LTS | `m9_0.3.0_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.3.0_amd64.ubuntu26.04.deb` |
 | Debian 13 | `m9_0.3.0_amd64.debian13.deb` | `sudo apt install ./m9_0.3.0_amd64.debian13.deb` |
 | Fedora 43 | `m9-0.3.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.3.0-1.fc43.x86_64.rpm` |
 | Rocky 9 (RHEL 9, Alma 9) | `m9-0.3.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.3.0-1.el9.x86_64.rpm` |
