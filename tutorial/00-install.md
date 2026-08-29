@@ -45,7 +45,7 @@ other distribution or release, route 2 is a two-line build.
 
 ## Route 2: from source
 
-    git clone <the m9 repository> && cd m9repo
+    git clone https://github.com/atverm/m9c && cd m9c
     ./build.sh                 # needs gcc, nothing else
 
 Two artifacts appear: `out/m9c` and `out/libm9rt.a`.  To use the
