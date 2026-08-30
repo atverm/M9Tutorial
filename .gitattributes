@@ -1,2 +1,5 @@
 # written by tools/tutor/mirror.sh in the private m9 repository
 *.m9 linguist-language=Modula-2 linguist-detectable=true
+# Linguist treats an examples/ directory as documentation and leaves it
+# out of the language bar; the examples ARE the code here
+examples/** linguist-documentation=false
