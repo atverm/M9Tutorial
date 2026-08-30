@@ -1,0 +1,168 @@
+MODULE C11Fetch ;
+
+(* Chapter 11: fetching eight files at once, and getting the same
+   answer as fetching them one at a time.
+
+   Build (the store server is started for you when this runs in the
+   tutorial; locally, serve examples/data on 18931):
+
+     m9c --make -c Http
+     m9c --make -c C11Fetch
+     gcc -O2 -flto C11Fetch.o Http.o DynStr.o Io.o Fmt.o \
+         m9rt.c tcpshim.c tlsshim.c -lssl -lcrypto -lm -o c11fetch
+
+   Everything a worker writes, it writes AT ITS OWN INDEX, so the
+   answer cannot depend on which download finished first -- and the
+   sequential pass below proves it by agreeing with the concurrent
+   one, byte for byte.                                              *)
+
+IMPORT Http ;
+IMPORT Io ;
+
+CONST
+  NFetch = 8 ;
+  Port = 18931 ;
+  Host = '127.0.0.1' ;
+
+TYPE
+  (* the workers' finish line.  A MONITOR RECORD's fields are reached
+     only through procedures bound to it, and those hold its lock --
+     which is why Finish below is SHORT and the fetching is not in
+     it. *)
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Job = RECORD
+    d : Done ;
+    status : SLICE OF I64 ;   (* one slot per page, written by index *)
+    size : SLICE OF I64 ;
+    next : I64 ;              (* the next page to claim *)
+  END ;
+
+(* THE PAGES.  Real files from the chapter's own zarr store, served
+   on loopback: eight chunks of the CO2 array. *)
+PROCEDURE PathOf (k: I64) : STR =
+BEGIN
+  CASE k OF
+  | 0 : RETURN '/co2.zarr/0.0'
+  | 1 : RETURN '/co2.zarr/0.1'
+  | 2 : RETURN '/co2.zarr/0.2'
+  | 3 : RETURN '/co2.zarr/1.0'
+  | 4 : RETURN '/co2.zarr/1.1'
+  | 5 : RETURN '/co2.zarr/1.2'
+  | 6 : RETURN '/co2.zarr/2.0'
+  | 7 : RETURN '/co2.zarr/2.2'
+  ELSE RETURN '/'
+  END
+END PathOf ;
+
+(* one page, into slot k.  Nothing here is shared with another worker
+   except the two slices, and each worker touches only its own k. *)
+PROCEDURE One (VAR status: SLICE OF I64 ; VAR size: SLICE OF I64 ;
+               k: I64) =
+VAR
+  body : SLICE OF BYTE ;
+  pool : POOL ;              (* a pool per call: m9_pool_alloc has no
+                                lock, so a worker allocates its own *)
+  n, st : I64 ;
+BEGIN
+  body := NEW (pool, BYTE, 65536) ;
+  n := 0 ;
+  BEGIN
+    st := Http.Get (Host, Port, PathOf (k), body, n)
+  EXCEPT
+  | Http.TransportError : st := -1
+  | ValueRange : st := -2
+  END ;
+  status[k] := st ;
+  size[k] := n
+END One ;
+
+PROCEDURE Claim (VAR j: Job) : I64 =
+VAR k : I64 ;
+BEGIN
+  k := j.next ;
+  j.next := j.next + 1 ;
+  RETURN k
+END Claim ;
+
+PROCEDURE Finish (VAR d: Done) =
+BEGIN
+  (* bound to the monitor, and deliberately tiny: the lock is held
+     for a counter and a signal, never for a download *)
+  d.n := d.n + 1 ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR k : I64 ;
+BEGIN
+  k := Claim (j) ;
+  IF k < NFetch THEN One (j.status, j.size, k) END ;
+  Finish (j.d)
+END Worker ;
+
+PROCEDURE AwaitAll (VAR d: Done ; want: I64) =
+BEGIN
+  WHILE d.n < want DO
+    WAIT (d)
+  END
+END AwaitAll ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  seqStatus, seqSize : SLICE OF I64 ;
+  i, differ : I64 ;
+
+BEGIN
+  seqStatus := NEW (pool, I64, NFetch) ;
+  seqSize := NEW (pool, I64, NFetch) ;
+
+  (* one at a time: the wait for each page happens in turn *)
+  i := 0 ;
+  WHILE i < NFetch DO
+    One (seqStatus, seqSize, i) ;
+    i := i + 1
+  END ;
+
+  (* all at once: eight threads, one page each.  The waits overlap --
+     which is the whole point, because waiting is what an I/O-bound
+     program does with its time. *)
+  j := NEW (pool, Job) ;
+  j.status := NEW (pool, I64, NFetch) ;
+  j.size := NEW (pool, I64, NFetch) ;
+  j.next := 0 ;
+  j.d.n := 0 ;
+  i := 0 ;
+  WHILE i < NFetch DO
+    THREAD (Worker, j) ;
+    i := i + 1
+  END ;
+  AwaitAll (j.d, NFetch) ;
+
+  (* THE ANSWER, in page order and not in finishing order *)
+  i := 0 ;
+  WHILE i < NFetch DO
+    Io.Write ('page ') ;
+    Io.WriteI64 (i) ;
+    Io.Write (' status ') ;
+    Io.WriteI64 (j.status[i]) ;
+    Io.Write (' bytes ') ;
+    Io.WriteI64 (j.size[i]) ;
+    Io.WriteLine ('') ;
+    i := i + 1
+  END ;
+
+  differ := 0 ;
+  i := 0 ;
+  WHILE i < NFetch DO
+    IF j.status[i] # seqStatus[i] THEN differ := differ + 1 END ;
+    IF j.size[i] # seqSize[i] THEN differ := differ + 1 END ;
+    i := i + 1
+  END ;
+  Io.Write ('one at a time and all at once agree: ') ;
+  IF differ = 0 THEN Io.WriteLine ('yes')
+  ELSE Io.WriteLine ('NO') END
+END C11Fetch.

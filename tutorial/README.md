@@ -33,6 +33,7 @@ the only kind worth reading.
 8. [Data through zarr](08-zarr.md)
 9. [Preparing data for plotting](09-plotting.md)
 10. [A real dataset, end to end](10-real-data.md)
+11. [Threads: waiting in parallel](11-threads.md)
 
 ## Running the examples yourself
 

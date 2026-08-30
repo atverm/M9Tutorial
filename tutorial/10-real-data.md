@@ -283,3 +283,5 @@ Worth noticing on the way out:
   can `cmp`.
 
 [← Previous: preparing data for plotting](09-plotting.md)
+
+[Next: threads, waiting in parallel →](11-threads.md)

@@ -1,0 +1,39 @@
+(* EXPECT-ERROR: cannot write through a value parameter: j is a shared borrow *)
+MODULE X11Share ;
+
+(* The mistake threading invites, refused before it can race.
+
+   A worker is handed a pointer to the job it shares with the others.
+   Written as a VALUE parameter, that pointer is a SHARED BORROW
+   (report par 4.1): everyone may read it, nobody may write through
+   it -- and this worker tries to keep its own tally in the shared
+   record.  Two workers doing that is a data race, and a race that
+   fires one time in ten is the kind of bug that survives a hundred
+   green test runs.
+
+   The fix is one word: VAR, which says out loud that this parameter
+   is the mutable handle.  Chapter 11's C11Fetch does exactly that,
+   and writes only at its own index.                               *)
+
+IMPORT Io ;
+
+TYPE
+  Job = RECORD
+    done : I64 ;
+  END ;
+
+PROCEDURE Worker (j: PTR Job) =
+BEGIN
+  j.done := j.done + 1
+END Worker ;
+
+VAR
+  pool : POOL ;
+  p : PTR Job IN pool ;
+
+BEGIN
+  p := NEW (pool, Job) ;
+  p.done := 0 ;
+  Worker (p) ;
+  Io.WriteLine ('never gets here')
+END X11Share.
