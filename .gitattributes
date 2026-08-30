@@ -1,0 +1,2 @@
+# written by tools/tutor/mirror.sh in the private m9 repository
+*.m9 linguist-language=Modula-2 linguist-detectable=true
