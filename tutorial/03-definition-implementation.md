@@ -104,8 +104,6 @@ END X3Sig.
 
 ```refusal X3Sig
 16:1 X3Sig.ToKelvin: signature differs from definition:
-    definition     (celsius: F64) : F64
-    implementation (celsius: F32) : F64
 ```
 
 Omit a promised procedure and it is named:

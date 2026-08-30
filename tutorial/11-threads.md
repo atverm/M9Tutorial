@@ -242,8 +242,9 @@ The mistake threading invites is sharing something mutable by
 accident. M9 will not let you:
 
 ```m9 X11Share.m9
-(* EXPECT-ERROR: cannot write through a value parameter: j is a shared borrow *)
 MODULE X11Share ;
+
+(* EXPECT-ERROR: cannot write through a value parameter: j is a shared borrow *)
 
 (* The mistake threading invites, refused before it can race.
 
@@ -284,7 +285,7 @@ END X11Share.
 ```
 
 ```refusal X11Share
-27:3 X11Share.Worker: cannot write through a value parameter: j is a shared borrow (take VAR, par 4.1)
+28:3 X11Share.Worker: cannot write through a value parameter: j is a shared borrow (take VAR, par 4.1)
 ```
 
 A `PTR` parameter written without `VAR` is a **shared borrow**
@@ -325,6 +326,27 @@ That is a limitation of the shim, not of the language, and it is
 written down where a reader will hit it rather than discovered by a
 disappointing benchmark. When the shim is audited or replaced, the
 annotation changes and the same program gets faster with no edit.
+
+## One thing to know before you run this in a container
+
+Threads and a tight memory limit interact in a way that has nothing
+to do with M9 and will bite you anyway.  glibc gives each thread that
+contends for `malloc` its own **arena**, and every arena RESERVES
+64 MB of address space -- not memory it uses, address space it claims.
+Eight workers can therefore reserve half a gigabyte while allocating
+almost nothing, and under a limit like `ulimit -v` (or a container
+with a small address-space cap) the program dies with `OutOfMemory`
+having done nothing wrong.
+
+The cells on this page run in a sandbox capped at 256 MB, and this
+example failed about one run in three until the cap was set:
+
+    MALLOC_ARENA_MAX=2 ./myprogram
+
+Measured here: 20 of 20 runs failed without it, 0 of 20 with it.  The
+symptom is worth recognising because it is so misleading -- a program
+that allocates a few kilobytes, reporting that it is out of memory,
+intermittently.
 
 ## What threads are not for
 

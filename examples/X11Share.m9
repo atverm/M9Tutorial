@@ -1,5 +1,6 @@
-(* EXPECT-ERROR: cannot write through a value parameter: j is a shared borrow *)
 MODULE X11Share ;
+
+(* EXPECT-ERROR: cannot write through a value parameter: j is a shared borrow *)
 
 (* The mistake threading invites, refused before it can race.
 
