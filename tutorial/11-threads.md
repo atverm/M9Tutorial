@@ -313,19 +313,28 @@ The socket layer this chapter uses says:
 |---|---|
 | `Connect` | `[SERIAL]` — conservative, until its thread-safety is audited |
 | `Recv`, `Send`, `Close` | `[REENTRANT]` |
-| `TlsConnect`, `TlsRead`, `TlsWrite`, `TlsClose` | `[SERIAL]`, and load-bearing |
+| `TlsConnect`, `TlsRead`, `TlsWrite`, `TlsClose` | `[REENTRANT]` |
 
-So plain HTTP overlaps its waiting, which is what the numbers at the
-top show; only the brief connect is serialised. **HTTPS does not**:
-the TLS shim keeps a table of handles and is genuinely not
-thread-safe, so eight concurrent TLS fetches would queue and take as
-long as one at a time. Chapter 10 reads a real service over TLS
-one request at a time for exactly this reason.
+So both plain HTTP and HTTPS overlap their waiting; only the brief
+plain `connect` is serialised, and that one is marked conservatively
+rather than because anything is known to be wrong with it.
 
-That is a limitation of the shim, not of the language, and it is
-written down where a reader will hit it rather than discovered by a
-disappointing benchmark. When the shim is audited or replaced, the
-annotation changes and the same program gets faster with no edit.
+The TLS row said `[SERIAL]` when this chapter was first written, and
+the reason was concrete: the shim keeps a table of handles, and it
+claimed a slot without a lock, so two threads could take the same one
+and the second would free the first's connection. The annotation was
+not a guess — it was the truth about that code. Making it
+`[REENTRANT]` meant *changing the code first*: one shared TLS context
+built once instead of one per connection, and a mutex held for the
+table bookkeeping only, never across a handshake, a read or a write.
+
+The point for you is what did **not** have to change: no program that
+used `Http.GetTls` was edited. The contract lives in the declaration,
+the compiler enforces what the declaration says, and when the thing
+behind it got better every caller got better with it. That is what an
+annotation is for — and if it had been a comment rather than a
+checked declaration, nobody could have told you which programs were
+safe in the meantime.
 
 ## One thing to know before you run this in a container
 
