@@ -25,19 +25,27 @@ CONST
   Host = '127.0.0.1' ;
 
 TYPE
-  (* the workers' finish line.  A MONITOR RECORD's fields are reached
-     only through procedures bound to it, and those hold its lock --
-     which is why Finish below is SHORT and the fetching is not in
-     it. *)
-  Done = MONITOR RECORD
-    n : I64 ;
+  (* EVERYTHING THE WORKERS SHARE AND CHANGE LIVES HERE.  A MONITOR
+     RECORD's fields are reached only through procedures bound to it,
+     and those hold its lock -- which is why the two bound procedures
+     below are SHORT and the fetching is not in them.
+
+     Both fields earn their place.  `n` is the finish line.  `next` is
+     the next page to claim, and it was a plain field of Job in the
+     first version of this example -- so Claim read it, added one and
+     wrote it back with no lock at all, from eight threads.  Two
+     workers then take the same page and some page is never taken:
+     `page 7 status 0 bytes 0`, about one run in twenty, which is the
+     worst kind of wrong because nineteen runs say it is right. *)
+  Work = MONITOR RECORD
+    n : I64 ;                 (* how many workers have finished *)
+    next : I64 ;              (* the next page to claim *)
   END ;
 
   Job = RECORD
-    d : Done ;
+    w : Work ;
     status : SLICE OF I64 ;   (* one slot per page, written by index *)
     size : SLICE OF I64 ;
-    next : I64 ;              (* the next page to claim *)
   END ;
 
 (* THE PAGES.  Real files from the chapter's own zarr store, served
@@ -79,34 +87,36 @@ BEGIN
   size[k] := n
 END One ;
 
-PROCEDURE Claim (VAR j: Job) : I64 =
+PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  k := j.next ;
-  j.next := j.next + 1 ;
+  (* bound to the monitor, so the read and the write cannot be split
+     by another worker: this is one indivisible claim *)
+  k := w.next ;
+  w.next := w.next + 1 ;
   RETURN k
 END Claim ;
 
-PROCEDURE Finish (VAR d: Done) =
+PROCEDURE Finish (VAR w: Work) =
 BEGIN
   (* bound to the monitor, and deliberately tiny: the lock is held
      for a counter and a signal, never for a download *)
-  d.n := d.n + 1 ;
-  SIGNAL (d)
+  w.n := w.n + 1 ;
+  SIGNAL (w)
 END Finish ;
 
 PROCEDURE Worker (VAR j: Job) =
 VAR k : I64 ;
 BEGIN
-  k := Claim (j) ;
+  k := Claim (j.w) ;
   IF k < NFetch THEN One (j.status, j.size, k) END ;
-  Finish (j.d)
+  Finish (j.w)
 END Worker ;
 
-PROCEDURE AwaitAll (VAR d: Done ; want: I64) =
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
 BEGIN
-  WHILE d.n < want DO
-    WAIT (d)
+  WHILE w.n < want DO
+    WAIT (w)
   END
 END AwaitAll ;
 
@@ -133,14 +143,14 @@ BEGIN
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  j.next := 0 ;
-  j.d.n := 0 ;
+  j.w.next := 0 ;
+  j.w.n := 0 ;
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;
     i := i + 1
   END ;
-  AwaitAll (j.d, NFetch) ;
+  AwaitAll (j.w, NFetch) ;
 
   (* THE ANSWER, in page order and not in finishing order *)
   i := 0 ;

@@ -53,19 +53,27 @@ CONST
   Host = '127.0.0.1' ;
 
 TYPE
-  (* the workers' finish line.  A MONITOR RECORD's fields are reached
-     only through procedures bound to it, and those hold its lock --
-     which is why Finish below is SHORT and the fetching is not in
-     it. *)
-  Done = MONITOR RECORD
-    n : I64 ;
+  (* EVERYTHING THE WORKERS SHARE AND CHANGE LIVES HERE.  A MONITOR
+     RECORD's fields are reached only through procedures bound to it,
+     and those hold its lock -- which is why the two bound procedures
+     below are SHORT and the fetching is not in them.
+
+     Both fields earn their place.  `n` is the finish line.  `next` is
+     the next page to claim, and it was a plain field of Job in the
+     first version of this example -- so Claim read it, added one and
+     wrote it back with no lock at all, from eight threads.  Two
+     workers then take the same page and some page is never taken:
+     `page 7 status 0 bytes 0`, about one run in twenty, which is the
+     worst kind of wrong because nineteen runs say it is right. *)
+  Work = MONITOR RECORD
+    n : I64 ;                 (* how many workers have finished *)
+    next : I64 ;              (* the next page to claim *)
   END ;
 
   Job = RECORD
-    d : Done ;
+    w : Work ;
     status : SLICE OF I64 ;   (* one slot per page, written by index *)
     size : SLICE OF I64 ;
-    next : I64 ;              (* the next page to claim *)
   END ;
 
 (* THE PAGES.  Real files from the chapter's own zarr store, served
@@ -107,34 +115,36 @@ BEGIN
   size[k] := n
 END One ;
 
-PROCEDURE Claim (VAR j: Job) : I64 =
+PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  k := j.next ;
-  j.next := j.next + 1 ;
+  (* bound to the monitor, so the read and the write cannot be split
+     by another worker: this is one indivisible claim *)
+  k := w.next ;
+  w.next := w.next + 1 ;
   RETURN k
 END Claim ;
 
-PROCEDURE Finish (VAR d: Done) =
+PROCEDURE Finish (VAR w: Work) =
 BEGIN
   (* bound to the monitor, and deliberately tiny: the lock is held
      for a counter and a signal, never for a download *)
-  d.n := d.n + 1 ;
-  SIGNAL (d)
+  w.n := w.n + 1 ;
+  SIGNAL (w)
 END Finish ;
 
 PROCEDURE Worker (VAR j: Job) =
 VAR k : I64 ;
 BEGIN
-  k := Claim (j) ;
+  k := Claim (j.w) ;
   IF k < NFetch THEN One (j.status, j.size, k) END ;
-  Finish (j.d)
+  Finish (j.w)
 END Worker ;
 
-PROCEDURE AwaitAll (VAR d: Done ; want: I64) =
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
 BEGIN
-  WHILE d.n < want DO
-    WAIT (d)
+  WHILE w.n < want DO
+    WAIT (w)
   END
 END AwaitAll ;
 
@@ -161,14 +171,14 @@ BEGIN
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  j.next := 0 ;
-  j.d.n := 0 ;
+  j.w.next := 0 ;
+  j.w.n := 0 ;
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;
     i := i + 1
   END ;
-  AwaitAll (j.d, NFetch) ;
+  AwaitAll (j.w, NFetch) ;
 
   (* THE ANSWER, in page order and not in finishing order *)
   i := 0 ;
@@ -204,13 +214,28 @@ list, so the order things arrive in never reaches the answer. The
 program prints in page order because the *data* is in page order —
 not because anything was sorted afterwards.
 
-**The monitor is tiny.** `Done` is a `MONITOR RECORD`: its fields can
-be touched only by procedures bound to it, and such a procedure holds
-its lock for the whole body. So `Finish` does two statements — bump a
-counter, signal — and the downloading happens *outside* it, in
+**Everything shared and changing is in the monitor, and the monitor
+is tiny.** `Work` is a `MONITOR RECORD`: its fields can be touched
+only by procedures bound to it, and such a procedure holds its lock
+for the whole body. Both of its fields are shared and both change —
+`n`, the count of finished workers, and `next`, the page to claim
+next — so both are in there, and the two bound procedures that touch
+them are two statements each. The downloading happens *outside*, in
 `Worker`. Put the fetch inside a bound procedure and eight workers
 queue politely behind one lock, which is a very reliable way to make
 threading slower than not threading.
+
+`next` is in the monitor because the first version of this example
+left it in `Job`, where `Claim` read it, added one and wrote it back
+with no lock. Two workers then claim the same page and one page is
+claimed by nobody, which prints as `page 7 status 0 bytes 0`. It
+survived every run on this machine and failed in CI, because the
+threads are started one after another and each begins a slow download
+immediately, so the increments almost never overlap. **Almost never is
+not a property you can build on**, and it is exactly the failure that
+a language cannot catch for you: writing `j.next := j.next + 1` from
+two threads is legal M9. Putting the field where only a bound
+procedure can reach it is what makes the claim indivisible.
 
 **Each worker allocates from its own pool.** `One` declares
 `pool : POOL` as a local, so the arena it carves belongs to that call.
@@ -292,12 +317,19 @@ A `PTR` parameter written without `VAR` is a **shared borrow**
 (report §4.1): everyone may read it, nobody may write through it. The
 fix is one word — `VAR`, which says out loud that this parameter is
 the mutable handle. That is why `Worker` in the example takes
-`VAR j: Job`, and why `Claim` can advance `j.next` while `One` cannot
-touch anything but its own slot.
+`VAR j: Job` while `One` touches nothing but its own slot.
 
 This is a compile error, not a race you find in production at the
 hundredth run. It is the same rule you met in chapter 4, doing a job
 you could not see there.
+
+**And notice exactly how far it goes**, because the example above paid
+for the distinction. `VAR` settles *who may write*. It says nothing
+about *two threads writing at once*: the racy `j.next := j.next + 1`
+took `VAR j: Job` and compiled, as it should. The compiler stops you
+sharing what you did not mean to share; the monitor is how you say
+what happens when several threads reach the same field on purpose.
+Two different jobs, and you need both.
 
 ## `[SERIAL]`, and what it costs you today
 
