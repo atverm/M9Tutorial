@@ -10,11 +10,12 @@ claim is tested, not asserted.
 
 ## Route 1: the install package
 
-The [release page](https://github.com/atverm/M9Tutorial/releases/tag/v0.3.0)
-of the [M9Tutorial repository](https://github.com/atverm/M9Tutorial)
-— which also holds every example in these chapters — carries one
-package per distribution, x86-64, each built ON that distribution
-from the same source tarball:
+The [release page](https://github.com/atverm/m9c/releases/tag/v0.3.0)
+of the compiler's repository, [m9c](https://github.com/atverm/m9c),
+carries one package per distribution, x86-64, each built ON that
+distribution from the same source tarball (the
+[M9Tutorial repository](https://github.com/atverm/M9Tutorial) holds
+every example in these chapters):
 
 | distribution | package | install |
 |---|---|---|

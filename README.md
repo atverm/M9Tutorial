@@ -1,5 +1,10 @@
 # Scientific programming in Modula-9 — first steps
 
+The compiler, runtime and standard library this tutorial teaches are
+in the [m9c](https://github.com/atverm/m9c) repository (`./build.sh`
+needs gcc and nothing else), and so are the install packages for six
+distributions, on its [release page](https://github.com/atverm/m9c/releases).
+
 M9 (Modula-9) is a Wirth-family language for scientific computing,
 designed for machine-written, human-audited code.  It is **not
 designed for human convenience**: it is verbose, clear, reliable and
@@ -40,7 +45,7 @@ cite ICOS when you use it.
 
 ## Install
 
-The [release page](https://github.com/atverm/M9Tutorial/releases/tag/v0.3.0)
+The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.3.0)
 carries one package per distribution — Ubuntu 24.04 and 26.04,
 Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
 each built on
