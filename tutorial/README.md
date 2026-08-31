@@ -20,6 +20,12 @@ examples named `X*` MUST fail to compile, with the diagnostic the
 text quotes.  A tutorial that cannot disagree with the compiler is
 the only kind worth reading.
 
+These pages teach the language by using it. The language itself is
+defined in one place — **[the M9 report](https://github.com/atverm/m9c/blob/main/docs/M9-report.md)**, the specification,
+where every rule is stated with the failure that forced it. This
+tutorial never contradicts it; when you want the rule rather than the
+worked example, that is the document to open.
+
 ## Chapters
 
 0. [Installing and running the compiler](00-install.md)

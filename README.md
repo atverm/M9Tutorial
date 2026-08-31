@@ -43,6 +43,12 @@ package — is licensed under the **GNU GPL v3** (see
 data licence ([doi:10.18160/JZ2X-GZGU](https://doi.org/10.18160/JZ2X-GZGU));
 cite ICOS when you use it.
 
+The language itself is defined in one document, the
+[M9 report](https://github.com/atverm/m9c/blob/main/docs/M9-report.md)
+-- the normative specification, where every rule is stated together
+with the observed failure that made it a rule.  These chapters teach
+by worked example; that is where the rules live.
+
 ## Install
 
 The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.3.1)
