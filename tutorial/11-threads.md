@@ -171,8 +171,9 @@ BEGIN
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  j.w.next := 0 ;
-  j.w.n := 0 ;
+  (* no `j.w.n := 0` here: par 6 refuses reaching into a monitor from
+     outside a bound procedure, and the assignment was writing zero
+     over zero anyway -- pool storage is defined-zero (par 4.3). *)
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;
