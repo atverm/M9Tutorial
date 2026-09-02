@@ -122,6 +122,57 @@ names the extra directories, and everything documented in chapter 3
 — your own definition comments included — appears in your own
 hovers.
 
+## Other editors: the language server
+
+For editors that speak the Language Server Protocol — Neovim, Helix,
+Emacs with eglot, Kate — the repository carries `m9lsp`, a language
+server written in M9 itself (`corpus/Lsp.m9`).  It publishes
+diagnostics on open and on save, and it holds the same rule as the
+VS Code extension: it never lexes M9 privately.  Every diagnostic is
+the compiler's own — the server runs `m9c --check` (check, print,
+write nothing) and republishes the messages with their line and
+column, so an editor squiggle can never disagree with the build.
+
+The server is not a second binary to install: `Lsp.m9` ships in the
+standard library, and you build it with the compiler you already
+have — one command, anywhere you have write permission:
+
+    m9c --make -o m9lsp Lsp
+
+This needs m9c 0.4.1 or newer (`m9c --version` says): the 0.4.0
+packages predate `--check` and the library module by a few hours.
+From a source build (route 2), any current checkout works.
+
+Wire it as a stdio server for `.m9` files.  Helix
+(`~/.config/helix/languages.toml`):
+
+    [language-server.m9lsp]
+    command = "m9lsp"
+
+    [[language]]
+    name = "modula9"
+    scope = "source.modula9"
+    file-types = ["m9"]
+    roots = []
+    language-servers = ["m9lsp"]
+
+Neovim (0.11+):
+
+    vim.lsp.config['m9lsp'] = {
+      cmd = { 'm9lsp' },
+      filetypes = { 'modula9' },
+    }
+    vim.lsp.enable('m9lsp')
+    vim.filetype.add({ extension = { m9 = 'modula9' } })
+
+The server finds `m9c` on `PATH` (or `$M9LSP_M9C` names one), and
+the compiler's own search rules apply — `$M9LIBRARY`, the installed
+library, and the checked file's directory — so a file whose imports
+sit beside it needs no configuration at all.  Checks run against
+the file on disk: save to see fresh diagnostics.  In VS Code, keep
+using the extension above; it already has hovers and completion,
+which the server does not yet.
+
 ## Checking the installation
 
     m9c --version                 m9c 0.4.0
