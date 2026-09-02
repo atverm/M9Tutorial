@@ -10,7 +10,7 @@ claim is tested, not asserted.
 
 ## Route 1: the install package
 
-The [release page](https://github.com/atverm/m9c/releases/tag/v0.4.0)
+The [release page](https://github.com/atverm/m9c/releases/tag/v0.4.1)
 of the compiler's repository, [m9c](https://github.com/atverm/m9c),
 carries one package per distribution, x86-64, each built ON that
 distribution from the same source tarball (the
@@ -19,12 +19,12 @@ every example in these chapters):
 
 | distribution | package | install |
 |---|---|---|
-| Ubuntu 24.04 LTS | `m9_0.4.0-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.4.0-1_amd64.ubuntu24.04.deb` |
-| Ubuntu 26.04 LTS | `m9_0.4.0-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.4.0-1_amd64.ubuntu26.04.deb` |
-| Debian 13 | `m9_0.4.0-1_amd64.debian13.deb` | `sudo apt install ./m9_0.4.0-1_amd64.debian13.deb` |
-| Fedora 43 | `m9-0.4.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.4.0-1.fc43.x86_64.rpm` |
-| Rocky 9 (RHEL 9, Alma 9) | `m9-0.4.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.4.0-1.el9.x86_64.rpm` |
-| Arch | `m9-0.4.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.4.0-1-x86_64.pkg.tar.zst` |
+| Ubuntu 24.04 LTS | `m9_0.4.1-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.4.1-1_amd64.ubuntu24.04.deb` |
+| Ubuntu 26.04 LTS | `m9_0.4.1-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.4.1-1_amd64.ubuntu26.04.deb` |
+| Debian 13 | `m9_0.4.1-1_amd64.debian13.deb` | `sudo apt install ./m9_0.4.1-1_amd64.debian13.deb` |
+| Fedora 43 | `m9-0.4.1-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.4.1-1.fc43.x86_64.rpm` |
+| Rocky 9 (RHEL 9, Alma 9) | `m9-0.4.1-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.4.1-1.el9.x86_64.rpm` |
+| Arch | `m9-0.4.1-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.4.1-1-x86_64.pkg.tar.zst` |
 
 Each package comes with a `.receipt` beside it — the distribution it
 was built on, its sha256, the tarball it came from, the gcc that
@@ -139,8 +139,8 @@ have — one command, anywhere you have write permission:
 
     m9c --make -o m9lsp Lsp
 
-This needs m9c 0.4.1 or newer (`m9c --version` says): the 0.4.0
-packages predate `--check` and the library module by a few hours.
+This needs m9c 0.4.1 or newer (`m9c --version` says; the 0.4.0
+packages predate `--check` and the library module by a few hours).
 From a source build (route 2), any current checkout works.
 
 Wire it as a stdio server for `.m9` files.  Helix
@@ -175,7 +175,7 @@ which the server does not yet.
 
 ## Checking the installation
 
-    m9c --version                 m9c 0.4.0
+    m9c --version                 m9c 0.4.1
     man m9c                       the reference, options and the
                                   supplied-flags contract
     ls /usr/share/doc/m9/modules  the standard library, one page
