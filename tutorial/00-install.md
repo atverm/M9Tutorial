@@ -165,6 +165,14 @@ Neovim (0.11+):
     vim.lsp.enable('m9lsp')
     vim.filetype.add({ extension = { m9 = 'modula9' } })
 
+A formatter travels the same way: `m9fmt` (`m9c --make -o m9fmt
+M9fmt`) prints the compiler's own canonical layout with every
+comment kept in place — columns, banners and trailing remarks
+preserved — and `m9fmt --check FILE.m9` exits nonzero when a file is
+not already in that layout, which is the CI-shaped half.  `-w`
+rewrites in place.  Like the language server, it never guesses: a
+file that does not parse is refused with the parser's positions.
+
 The server finds `m9c` on `PATH` (or `$M9LSP_M9C` names one), and
 the compiler's own search rules apply — `$M9LIBRARY`, the installed
 library, and the checked file's directory — so a file whose imports
