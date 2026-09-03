@@ -9,7 +9,12 @@ parameter.  Measured across this repository's whole library, the
 rule holds with no exceptions worth naming: *the pool parameter
 appears exactly when the allocation outlives the call.*  A signature
 with a pool tells you the result lives on and who owns it; a
-signature without one is a promise that nothing was kept.
+signature without one is a promise that nothing was kept.  Strings
+are the one case the compiler handles for you: a string a procedure
+*answers* — `RETURN a + b`, or a `VAR` parameter it sets — is placed
+in the caller's own frame with no pool in sight (`Fmt.Fixed` below
+takes none), and the pool parameter is for what is kept beyond that:
+a table, a record, a string a module holds on to.
 
 ```m9 C4Mem.m9
 MODULE C4Mem ;
@@ -80,9 +85,9 @@ BEGIN
   DynStr.Append (pool, d, ': n=') ;
   DynStr.AppendI64 (pool, d, LEN (xs)) ;
   DynStr.Append (pool, d, ' mean=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (pool, sum / F64 (LEN (xs)), 2)) ;
+  DynStr.Append (pool, d, Fmt.Fixed (sum / F64 (LEN (xs)), 2)) ;
   DynStr.Append (pool, d, ' spread=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (pool, Spread (xs), 2)) ;
+  DynStr.Append (pool, d, Fmt.Fixed (Spread (xs), 2)) ;
   RETURN DynStr.View (d)
 END Describe ;
 
@@ -122,9 +127,10 @@ BEGIN
   Shift (more, 0.25) ;
   Io.WriteLine (Describe (pool, 'shifted', more)) ;
 
-  (* strings are SLICE OF CHAR; `+` composes into HEAP, the one
-     predeclared never-freed pool -- fine in a program whose strings
-     die with it, wrong in a server loop, and greppable either way *)
+  (* strings are SLICE OF CHAR; `+` composes into the frame's own
+     arena, which the compiler creates on the first `+` and frees at
+     the exit -- no pool to name, nothing to free, and a result that
+     RETURNs is moved to the caller's frame on the way out *)
   greeting := 'pools: ' + 'carve, use, ' + 'free as one' ;
   Io.WriteLine (greeting) ;
   Io.WriteI64 (LEN (greeting)) ;
@@ -166,13 +172,19 @@ Walk the pieces:
 - **Strings are `SLICE OF CHAR`** — the predeclared name `STR` is
   exactly that.  Literals take `'` or `"` with **no escapes** (a
   string cannot contain its own delimiter, and nothing in a string
-  is ever secretly something else).  `+` composes strings into
-  `HEAP`, the one predeclared, never-freed pool: fine in a program
-  whose strings die with it, wrong in a server loop, and greppable
-  either way.  For ACCUMULATION — building a string in a loop —
-  `DynStr` grows a buffer in a pool you name; `s := s + x` in a
-  loop copies the whole string every pass, and chapter 1's museum
-  spirit says: make the cost visible, then choose.
+  is ever secretly something else).  `+` composes strings into the
+  procedure's own FRAME: an arena the compiler creates on the first
+  `+` and frees at the exit, so there is no pool to name and nothing
+  to free — and a string that leaves through `RETURN` or a `VAR`
+  parameter is moved into the caller's frame on the way out, which
+  is why `Fmt.Fixed` takes no pool.  `s := s + x` in a loop is
+  linear: the arena extends its latest allocation in place.  That
+  holds while nothing else is carved between the appends; where it
+  cannot be relied on, or where the string must OUTLIVE the frame,
+  `DynStr` grows a buffer in a pool you name (`Describe` above), and
+  a string that must outlive everything is declared where it is
+  needed.  The report's rule, par 2.3: `+` composes, `DynStr`
+  accumulates.
 - **The docstrings are load-bearing.**  The comment under each
   procedure header, with its `name -- description` parameter lines,
   is what `m9c --doc` renders into the module's reference page and

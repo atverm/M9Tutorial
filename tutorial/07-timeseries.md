@@ -72,7 +72,7 @@ BEGIN
     stamp.t := F64 (tm [i]) ;
     Io.Write (Time.Iso (pool, stamp, 0)) ;
     Io.Write ('  ') ;
-    Io.WriteLine (Fmt.Fixed (pool, ta [i], 3))
+    Io.WriteLine (Fmt.Fixed (ta [i], 3))
   END
 EXCEPT
 | Csv.ParseError (msg, line, col) :

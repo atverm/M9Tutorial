@@ -151,23 +151,22 @@ IMPORT Fmt ;
 IMPORT Temps ;
 
 VAR
-  pool : POOL ;
-  r    : ARRAY 3 OF F64 ;
+  r : ARRAY 3 OF F64 ;
 
 BEGIN
   r [0] := 5.5 ;  r [1] := -2.0 ;  r [2] := 11.25 ;
   Io.Write ('mean of the series: ') ;
-  Io.Write (Fmt.Fixed (pool, Temps.Mean (r), 2)) ;
+  Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
   Io.WriteLine (' K') ;
   r [1] := -300.0 ;                (* not a temperature *)
-  Io.Write (Fmt.Fixed (pool, Temps.Mean (r), 2)) ;
+  Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
   Io.WriteLine (' never printed')
 EXCEPT
 | Temps.TooCold (got, limit) :
     Io.Write ('TooCold: ') ;
-    Io.Write (Fmt.Fixed (pool, got, 1)) ;
+    Io.Write (Fmt.Fixed (got, 1)) ;
     Io.Write (' is below ') ;
-    Io.WriteLine (Fmt.Fixed (pool, limit, 2))
+    Io.WriteLine (Fmt.Fixed (limit, 2))
 | ValueRange :
     Io.ErrLine ('formatting failed') ;
     Io.Halt (1)

@@ -20,10 +20,9 @@ IMPORT Fmt ;
 IMPORT Stats ;
 
 PROCEDURE P (RO label: STR ; v: F64 ; dec: I64) =
-VAR pool : POOL ;
 BEGIN
   Io.Write (label) ;
-  Io.Write (Fmt.Fixed (pool, v, dec)) ;
+  Io.Write (Fmt.Fixed (v, dec)) ;
   Io.WriteLine ('')
 EXCEPT
 | ValueRange :
@@ -121,16 +120,15 @@ IMPORT Stats ;
 IMPORT Fmt ;
 
 VAR
-  pool : POOL ;
-  xs   : ARRAY 3 OF F64 ;
-  m    : F64 ;
+  xs : ARRAY 3 OF F64 ;
+  m  : F64 ;
 
 BEGIN
   xs [0] := 1.0 ;
   xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
-  Io.WriteLine ('mean = ' + Fmt.Fixed (pool, m, 3))
+  Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
 EXCEPT
 | ValueRange :
     Io.WriteLine ('Stats.Mean refused the NaN (ValueRange)')

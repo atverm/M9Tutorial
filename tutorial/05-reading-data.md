@@ -86,7 +86,7 @@ BEGIN
   Io.Write (' .. ') ;
   Io.WriteLine (Time.Iso (pool, stamp [LEN (stamp) - 1], 0)) ;
   Io.Write ('mean TA ') ;
-  Io.Write (Fmt.Fixed (pool, Stats.Mean (SLICE (buf, 0, n)), 3)) ;
+  Io.Write (Fmt.Fixed (Stats.Mean (SLICE (buf, 0, n)), 3)) ;
   Io.WriteLine (' degC')
 EXCEPT
 | Csv.ParseError (msg, line, col) :
@@ -136,8 +136,10 @@ Walk the pipeline:
 - **`F64 (temp [i])`** — the file's reals are F32 (they have seven
   significant digits at most); statistics run in F64.  The widening
   is written, because chapter 2.
-- **`Fmt.Fixed (pool, …, 3)`** — formatting allocates, so it takes
-  the pool.  Which brings us to the last idea.
+- **`Fmt.Fixed (…, 3)`** — no pool: a formatted number is read once
+  and printed, and the compiler places it in the caller's frame
+  (chapter 4).  The pool goes where storage is KEPT — the parsed
+  table — which brings us to the last idea.
 
 ## The pool answers "who frees this?"
 
@@ -148,7 +150,7 @@ whole library: **the pool parameter appears exactly when the
 allocation outlives the call.**  A signature with a pool is telling
 you the result lives on and who owns it; a signature without one is
 a promise that nothing was kept.  This program declares one pool at
-the top; everything — the parsed table, the formatted strings —
+the top; everything it carves — the parsed table, the stamps —
 dies with the program, and there is no free() to forget and no
 garbage collector to wonder about.
 

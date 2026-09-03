@@ -66,9 +66,9 @@ BEGIN
   DynStr.Append (pool, d, ': n=') ;
   DynStr.AppendI64 (pool, d, LEN (xs)) ;
   DynStr.Append (pool, d, ' mean=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (pool, sum / F64 (LEN (xs)), 2)) ;
+  DynStr.Append (pool, d, Fmt.Fixed (sum / F64 (LEN (xs)), 2)) ;
   DynStr.Append (pool, d, ' spread=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (pool, Spread (xs), 2)) ;
+  DynStr.Append (pool, d, Fmt.Fixed (Spread (xs), 2)) ;
   RETURN DynStr.View (d)
 END Describe ;
 
@@ -108,9 +108,10 @@ BEGIN
   Shift (more, 0.25) ;
   Io.WriteLine (Describe (pool, 'shifted', more)) ;
 
-  (* strings are SLICE OF CHAR; `+` composes into HEAP, the one
-     predeclared never-freed pool -- fine in a program whose strings
-     die with it, wrong in a server loop, and greppable either way *)
+  (* strings are SLICE OF CHAR; `+` composes into the frame's own
+     arena, which the compiler creates on the first `+` and frees at
+     the exit -- no pool to name, nothing to free, and a result that
+     RETURNs is moved to the caller's frame on the way out *)
   greeting := 'pools: ' + 'carve, use, ' + 'free as one' ;
   Io.WriteLine (greeting) ;
   Io.WriteI64 (LEN (greeting)) ;

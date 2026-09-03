@@ -155,16 +155,16 @@ BEGIN
 
   Io.Write ('hours in the window ') ;
   Io.WriteI64 (valid) ;
-  Io.WriteLine (' (of ' + Fmt.I64Str (pool, n) + ' in the store)') ;
+  Io.WriteLine (' (of ' + Fmt.I64Str (n) + ' in the store)') ;
   Io.WriteLine ('mean 2021.5        ' +
-                Fmt.Fixed (pool, coef [0], 2) + ' umol/mol') ;
+                Fmt.Fixed (coef [0], 2) + ' umol/mol') ;
   Io.WriteLine ('trend              ' +
-                Fmt.Fixed (pool, coef [1], 3) + ' umol/mol per year') ;
+                Fmt.Fixed (coef [1], 3) + ' umol/mol per year') ;
   Io.WriteLine ('annual amplitude   ' +
-                Fmt.Fixed (pool, amp1, 2) + ' (peak to trough ' +
-                Fmt.Fixed (pool, 2.0 * amp1, 2) + ')') ;
+                Fmt.Fixed (amp1, 2) + ' (peak to trough ' +
+                Fmt.Fixed (2.0 * amp1, 2) + ')') ;
   Io.WriteLine ('semiannual         ' +
-                Fmt.Fixed (pool, amp2, 2)) ;
+                Fmt.Fixed (amp2, 2)) ;
 
   nm := 0 ;
   FOR i := 0 TO Months - 1 DO

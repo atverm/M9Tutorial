@@ -37,7 +37,7 @@ END X2Assign.
 ```
 
 ```refusal X2Assign
-19:5 X2Assign body: cannot assign F64 to I64 (no implicit conversions, par 2.1)
+19:8 X2Assign body: cannot assign F64 to I64 (no implicit conversions, par 2.1)
 ```
 
 That diagnostic is real — the gate compiles this file on every run

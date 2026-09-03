@@ -10,10 +10,9 @@ IMPORT Fmt ;
 IMPORT Stats ;
 
 PROCEDURE P (RO label: STR ; v: F64 ; dec: I64) =
-VAR pool : POOL ;
 BEGIN
   Io.Write (label) ;
-  Io.Write (Fmt.Fixed (pool, v, dec)) ;
+  Io.Write (Fmt.Fixed (v, dec)) ;
   Io.WriteLine ('')
 EXCEPT
 | ValueRange :
