@@ -1,0 +1,143 @@
+MODULE C13Modes ;
+
+(* Chapter 13: procedures -- how a call passes its arguments, how a
+   function answers on every path, and what each parameter MODE
+   promises.  The modes are the whole story: a mode is a promise the
+   compiler holds the body to, and the reviewer can read it off the
+   heading without opening the body.
+
+     value   a copy for a scalar, a shared read-only borrow for a
+             pointer: the body may look, not change
+     VAR     the caller's own variable: the body may change it
+     RO      a read-only borrow, and the reader knows nothing
+             changes even though the thing is big
+     KEPT    the body KEEPS the argument beyond the call -- it must
+             say so, or the retention is refused                    *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Math ;
+
+TYPE
+  Point = RECORD
+    x, y : F64 ;
+  END ;
+  PointRef = PTR Point ;     (* NEW wants a type NAME for its elements *)
+
+(* --- VAR: the body changes the caller's variable, and says so --- *)
+PROCEDURE Scale (VAR p: Point ; f: F64) =
+BEGIN
+  p.x := p.x * f ;
+  p.y := p.y * f
+END Scale ;
+
+(* --- RO: a read-only borrow.  The heading promises p is unchanged;
+   the body could not write p.x if it tried. --- *)
+PROCEDURE Norm (RO p: Point) : F64 RAISES ValueRange =
+BEGIN
+  RETURN Math.Sqrt (p.x * p.x + p.y * p.y)
+END Norm ;
+
+(* --- a function answers on EVERY path, or it is refused.  The
+   ELSE is not decoration: without it there is a path that reaches
+   END with no RETURN, and the checker names it. --- *)
+PROCEDURE Sign (v: F64) : I64 =
+BEGIN
+  IF v > 0.0 THEN
+    RETURN 1
+  ELSIF v < 0.0 THEN
+    RETURN -1
+  ELSE
+    RETURN 0
+  END
+END Sign ;
+
+(* --- "maybe an answer" is OPT, never a null pointer: the caller
+   cannot use the result without first asking IS SOME --- *)
+PROCEDURE Nearest (RO pts: SLICE OF PointRef ; RO q: Point ; within: F64)
+  : OPT PTR Point RAISES ValueRange =
+VAR
+  best : OPT PTR Point ;
+  bestD, d : F64 ;
+  i : I64 ;
+  delta : Point ;
+BEGIN
+  best := NONE ;
+  bestD := within ;
+  FOR i := 0 TO LEN (pts) - 1 DO
+    delta.x := pts[i].x - q.x ;
+    delta.y := pts[i].y - q.y ;
+    d := Norm (delta) ;
+    IF d < bestD THEN
+      bestD := d ;
+      best := SOME (pts[i])           (* a PTR is wrapped, never coerced *)
+    END
+  END ;
+  RETURN best
+END Nearest ;
+
+(* --- KEPT: this procedure stores its argument in module state, so
+   the string outlives the call.  Without KEPT on s the checker
+   refuses the assignment: a borrowed argument may not reach module
+   state undeclared (par 4.1).  With it, the caller can read off the
+   heading that what it passes will be held on to. --- *)
+VAR lastLabel : STR ;
+
+PROCEDURE Remember (KEPT s: STR) =
+BEGIN
+  lastLabel := s
+END Remember ;
+
+PROCEDURE Show (RO name: STR ; RO p: Point) RAISES ValueRange =
+BEGIN
+  Io.WriteLine (name + ' = (' + Fmt.Fixed (p.x, 2) + ', '
+                + Fmt.Fixed (p.y, 2) + ')  norm ' + Fmt.Fixed (Norm (p), 3))
+END Show ;
+
+VAR
+  pool : POOL ;
+  a, origin : Point ;
+  pts : SLICE OF PointRef ;
+  i : I64 ;
+
+BEGIN
+  BEGIN
+    a.x := 3.0 ; a.y := 4.0 ;
+    Show ('a', a) ;
+
+    Scale (a, 0.5) ;                    (* VAR: a itself changes *)
+    Show ('a scaled by 0.5', a) ;
+
+    Io.WriteLine ('sign of -2.5: ' + Fmt.I64Str (Sign (-2.5))
+                  + ', of 0.0: ' + Fmt.I64Str (Sign (0.0))
+                  + ', of 7.0: ' + Fmt.I64Str (Sign (7.0))) ;
+
+    (* three points on the plane, and a query that has a neighbour
+       within 2, and one that has none *)
+    pts := NEW (pool, PointRef, 3) ;
+    FOR i := 0 TO 2 DO
+      pts[i] := NEW (pool, Point) ;
+      pts[i].x := F64 (i) * 5.0 ;
+      pts[i].y := F64 (i) * 5.0
+    END ;
+    origin.x := 6.0 ; origin.y := 4.0 ;
+    IF Nearest (pts, origin, 2.0) IS SOME p THEN
+      Io.WriteLine ('nearest to (6, 4) within 2: (' + Fmt.Fixed (p.x, 2)
+                    + ', ' + Fmt.Fixed (p.y, 2) + ')')
+    ELSE
+      Io.WriteLine ('nothing within 2 of (6, 4)')
+    END ;
+    origin.x := 30.0 ; origin.y := 30.0 ;
+    IF Nearest (pts, origin, 2.0) IS SOME p THEN
+      Io.WriteLine ('nearest to (30, 30) within 2: (' + Fmt.Fixed (p.x, 2)
+                    + ', ' + Fmt.Fixed (p.y, 2) + ')')
+    ELSE
+      Io.WriteLine ('nothing within 2 of (30, 30)')
+    END ;
+
+    Remember ('the label that outlives its call') ;
+    Io.WriteLine ('remembered: ' + lastLabel)
+  EXCEPT
+  | ValueRange : Io.ErrLine ('a value out of range')
+  END
+END C13Modes.

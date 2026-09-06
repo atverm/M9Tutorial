@@ -380,8 +380,9 @@ almost nothing, and under a limit like `ulimit -v` (or a container
 with a small address-space cap) the program dies with `OutOfMemory`
 having done nothing wrong.
 
-The cells on this page run in a sandbox capped at 256 MB, and this
-example failed about one run in three until the cap was set:
+The cells on this page run in a sandbox capped at 512 MB of address
+space, and this example failed about one run in three until the cap
+was set:
 
     MALLOC_ARENA_MAX=2 ./myprogram
 
@@ -405,3 +406,5 @@ files off a slow disk, a hundred queries to a service that thinks for
 a moment. Waiting is the resource being parallelised.
 
 [← Previous: a real dataset, end to end](10-real-data.md)
+
+[Next: building strings →](12-building-strings.md)

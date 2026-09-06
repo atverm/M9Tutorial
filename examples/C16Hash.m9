@@ -1,0 +1,167 @@
+MODULE C16Hash ;
+
+(* Chapter 16, second half: a hash sum over a whole file, computed in
+   parallel chunks -- and the one rule that makes a parallel sum
+   reproducible: the pieces are combined in a FIXED order.
+
+   The hash is a polynomial over the bytes, h := h * P + byte, in
+   64-bit arithmetic that wraps -- M9 spells that `*%` and `+%`, the
+   operators that say out loud they are modular, where ordinary `*`
+   would raise Overflow.  Each worker hashes its own chunk into its
+   own slot of the result; the main thread then folds the slots in
+   chunk order.  Fold them in another order and the number changes,
+   which the program shows on purpose: the order is part of what the
+   hash IS, not an implementation detail.
+
+   The shipped week is half a megabyte and hashes in a millisecond
+   either way; the chapter's timings come from the full 186 MB file,
+   given as an argument.                                             *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Time ;
+
+CONST
+  Default = 'data/fluxnet_week.csv' ;
+  Chunks = 8 ;
+  P = 1000003 ;                  (* a prime, and the multiplier *)
+
+TYPE
+  Work = MONITOR RECORD
+    n : I64 ;
+    next : I64 ;
+  END ;
+
+  Job = RECORD
+    w : Work ;
+    bytes : SLICE OF BYTE ;      (* the file: read by all, written by none *)
+    part : SLICE OF I64 ;        (* one slot per chunk, written by index *)
+  END ;
+
+PROCEDURE Claim (VAR w: Work) : I64 =
+VAR k : I64 ;
+BEGIN
+  k := w.next ;
+  w.next := w.next + 1 ;
+  RETURN k
+END Claim ;
+
+PROCEDURE Finish (VAR w: Work) =
+BEGIN
+  w.n := w.n + 1 ;
+  SIGNAL (w)
+END Finish ;
+
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
+BEGIN
+  WHILE w.n < want DO WAIT (w) END
+END AwaitAll ;
+
+(* the hash of one run of bytes.  `*%` and `+%` wrap mod 2^64 by
+   definition; the result is a bit pattern held in an I64. *)
+PROCEDURE HashOf (RO b: SLICE OF BYTE) : I64 =
+VAR
+  h, i : I64 ;
+BEGIN
+  h := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    h := h *% P +% I64 (b[i])
+  END ;
+  RETURN h
+END HashOf ;
+
+(* chunk k of n bytes is [k*n/Chunks, (k+1)*n/Chunks) *)
+PROCEDURE ChunkOf (RO b: SLICE OF BYTE ; k: I64) : SLICE OF BYTE =
+VAR lo, hi : I64 ;
+BEGIN
+  lo := k * LEN (b) DIV Chunks ;
+  hi := (k + 1) * LEN (b) DIV Chunks ;
+  RETURN SLICE (b, lo, hi - lo)
+END ChunkOf ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR k : I64 ;
+BEGIN
+  k := Claim (j.w) ;
+  IF k < Chunks THEN
+    j.part[k] := HashOf (ChunkOf (j.bytes, k))     (* my slot, only mine *)
+  END ;
+  Finish (j.w)
+END Worker ;
+
+(* the fold: chunk hashes into one number, in chunk order *)
+PROCEDURE Combine (RO part: SLICE OF I64 ; reversed: BOOL) : I64 =
+VAR
+  total, k : I64 ;
+BEGIN
+  total := 0 ;
+  IF reversed THEN
+    FOR k := LEN (part) - 1 TO 0 BY -1 DO total := total *% P +% part[k] END
+  ELSE
+    FOR k := 0 TO LEN (part) - 1 DO total := total *% P +% part[k] END
+  END ;
+  RETURN total
+END Combine ;
+
+VAR
+  pool : POOL ;
+  path : STR ;
+  bytes : SLICE OF BYTE ;
+  serialPart : SLICE OF I64 ;
+  j : PTR Job IN pool ;
+  k, i : I64 ;
+  t0, t1 : Time.Instant ;
+  serial, par : F64 ;
+
+BEGIN
+  BEGIN
+    path := Default ;
+    IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
+    bytes := Io.ReadFileBytes (pool, path) ;
+    Io.WriteLine ('file: ' + Fmt.I64Str (LEN (bytes)) + ' bytes in '
+                  + Fmt.I64Str (Chunks) + ' chunks') ;
+
+    (* ---- one thread: the chunks in order, then the fold ---- *)
+    serialPart := NEW (pool, I64, Chunks) ;
+    t0 := Time.Now () ;
+    FOR k := 0 TO Chunks - 1 DO
+      serialPart[k] := HashOf (ChunkOf (bytes, k))
+    END ;
+    t1 := Time.Now () ;
+    serial := Time.Elapsed (t0, t1) ;
+
+    (* ---- eight threads: the same chunks, whoever gets there first,
+       into slots that sit in chunk order whatever the finishing
+       order was ---- *)
+    j := NEW (pool, Job) ;
+    j.bytes := bytes ;
+    j.part := NEW (pool, I64, Chunks) ;
+    t0 := Time.Now () ;
+    FOR i := 1 TO Chunks DO THREAD (Worker, j) END ;
+    AwaitAll (j.w, Chunks) ;
+    t1 := Time.Now () ;
+    par := Time.Elapsed (t0, t1) ;
+    (* timings only for a file named on the command line: the shipped
+       week hashes in a millisecond, and a number that changes from
+       run to run has no place in gated output *)
+    IF Io.ArgCount () > 1 THEN
+      Io.ErrLine ('hash: serial ' + Fmt.Fixed (serial, 3) + ' s, '
+                  + Fmt.I64Str (Chunks) + ' threads ' + Fmt.Fixed (par, 3)
+                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+    END ;
+
+    Io.WriteLine ('hash sum, one thread:     ' + Fmt.I64Str (Combine (serialPart, FALSE))) ;
+    Io.WriteLine ('hash sum, eight threads:  ' + Fmt.I64Str (Combine (j.part, FALSE))) ;
+    IF Combine (serialPart, FALSE) = Combine (j.part, FALSE) THEN
+      Io.WriteLine ('identical: yes')
+    ELSE
+      Io.WriteLine ('identical: NO')
+    END ;
+    Io.WriteLine ('the same slots folded in reverse order: '
+                  + Fmt.I64Str (Combine (j.part, TRUE))
+                  + '  -- a different number, so the order is part of the definition')
+  EXCEPT
+  | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
+  | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
+  END
+END C16Hash.

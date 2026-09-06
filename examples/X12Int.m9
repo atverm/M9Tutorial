@@ -1,0 +1,20 @@
+MODULE X12Int ;
+
+(* EXPECT-ERROR: cannot concatenate a string with I64 *)
+(* Chapter 12, a program that must NOT compile.  `+` joins strings,
+   and a CHAR is one code point and joins too; a NUMBER is neither.
+   'rows ' + n would have to choose a format -- how many digits, a
+   sign, padding -- and M9 does not choose silently.  Fmt.I64Str (n)
+   says how, and the reviewer can see it.                            *)
+
+IMPORT Io ;
+
+VAR
+  n : I64 ;
+  s : STR ;
+
+BEGIN
+  n := 336 ;
+  s := 'rows ' + n ;          (* refused: format the number first *)
+  Io.WriteLine (s)
+END X12Int.

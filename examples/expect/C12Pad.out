@@ -1,0 +1,5 @@
+[42      ]  PadWrong: named left, pads right
+[      42]  PadSlow: correct, and quadratic
+[      42]  PadLeft: correct, and linear
+[      42]  Fmt.I64Pad: for a number, the library already has it
+[42*]  a CHAR appended, [*42] prepended

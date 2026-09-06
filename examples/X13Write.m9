@@ -1,0 +1,32 @@
+MODULE X13Write ;
+
+(* EXPECT-ERROR: cannot write through a value parameter *)
+(* Chapter 13, a program that must NOT compile.  A pointer passed by
+   VALUE is a shared borrow: the body may read what it points at and
+   may not change it.  In C this would be a silent write into the
+   caller's data through a copied pointer; here the mode on the
+   heading says "look, do not touch", and the checker holds the body
+   to it.  Write `VAR p: PTR Point` if you mean to change it.       *)
+
+IMPORT Io ;
+
+TYPE
+  Point = RECORD
+    x, y : F64 ;
+  END ;
+
+PROCEDURE Zero (p: PTR Point) =
+BEGIN
+  p.x := 0.0 ;               (* refused: p is a value parameter *)
+  p.y := 0.0
+END Zero ;
+
+VAR
+  pool : POOL ;
+  q : PTR Point IN pool ;
+
+BEGIN
+  q := NEW (pool, Point) ;
+  Zero (q) ;
+  Io.WriteLine ('never compiled')
+END X13Write.

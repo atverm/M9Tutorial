@@ -1,0 +1,6 @@
+a = (3.00, 4.00)  norm 5.000
+a scaled by 0.5 = (1.50, 2.00)  norm 2.500
+sign of -2.5: -1, of 0.0: 0, of 7.0: 1
+nearest to (6, 4) within 2: (5.00, 5.00)
+nothing within 2 of (30, 30)
+remembered: the label that outlives its call

@@ -1,0 +1,23 @@
+MODULE X13Keep ;
+
+(* EXPECT-ERROR: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1) *)
+(* Chapter 13, a program that must NOT compile.  Remember stores its
+   argument in a module variable, so the string is KEPT beyond the
+   call -- and the heading does not say so.  A caller reading
+   `RO s: STR` is entitled to believe the call borrows s and lets it
+   go; the body breaks that promise, and the checker names the
+   parameter and the word that would fix it.                         *)
+
+IMPORT Io ;
+
+VAR lastLabel : STR ;
+
+PROCEDURE Remember (RO s: STR) =
+BEGIN
+  lastLabel := s             (* refused: s is borrowed, not kept *)
+END Remember ;
+
+BEGIN
+  Remember ('a label') ;
+  Io.WriteLine (lastLabel)
+END X13Keep.

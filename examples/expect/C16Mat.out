@@ -1,0 +1,3 @@
+product of two 800x800 matrices in 8 bands: identical to the serial product, bit for bit
+inverse of a 800x800 SPD matrix in 8 column bands: identical to SpdInverse, bit for bit
+S times the inverse is the identity to within 1e-9: yes

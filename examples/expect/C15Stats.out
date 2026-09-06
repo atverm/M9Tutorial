@@ -1,0 +1,16 @@
+336 half-hours with both NEE and TA
+
+NEE on TA, least squares:
+  slope      -1.0798 umol m-2 s-1 per degC  (stderr 0.1213)
+  intercept  13.651 umol m-2 s-1
+  r          -0.438   r^2 0.192
+  p          3.54e-17  (two-sided, against slope = 0)
+
+NEE when TA is above its median 15.08 degC against below it:
+  warm mean  -7.908  (n 168)
+  cool mean  1.446  (n 168)
+  t -10.08  dof 303.5  p 8.42e-21
+
+normal fit of NEE: mu -3.231, sigma 9.685
+three draws from it: -7.926 10.014 -13.524
+in 1000 series with that mean and spread and no relation to TA, |slope| reached 1.0798: 0 times

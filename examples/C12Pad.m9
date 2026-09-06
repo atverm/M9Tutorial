@@ -1,0 +1,93 @@
+MODULE C12Pad ;
+
+(* Chapter 12: building strings -- three ways to pad a string on the
+   left, of which the first is wrong, the second is right and slow,
+   and the third is right.  The compiler accepts all three.  *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Time ;
+
+(* 1. THE HORROR.  Named PadLeft in the first draft, and it compiles,
+   checks and runs -- and pads on the RIGHT, because `d + ' '`
+   appends.  No checker knows which side a name promises. *)
+PROCEDURE PadWrong (RO s: STR ; width: I64) : STR =
+VAR
+  d : STR ;
+  i : I64 ;
+BEGIN
+  d := '' + s ;                (* a copy of our own, in this frame *)
+  FOR i := LEN (s) + 1 TO width DO d := d + ' ' END ;
+  RETURN d
+END PadWrong ;
+
+(* 2. CORRECT, AND QUADRATIC.  `' ' + d` prepends, so the space lands
+   on the left.  But `+` extends its LEFT operand in place only when
+   that operand is the newest thing in the frame's arena; with a
+   literal on the left it must copy all of d every time round, so n
+   spaces cost n^2 character copies. *)
+PROCEDURE PadSlow (RO s: STR ; width: I64) : STR =
+VAR
+  d : STR ;
+  i : I64 ;
+BEGIN
+  d := '' + s ;
+  FOR i := LEN (s) + 1 TO width DO d := ' ' + d END ;
+  RETURN d
+END PadSlow ;
+
+(* 3. CORRECT, AND LINEAR.  Build the padding by APPENDING -- the
+   loop's left operand is always the newest thing in the arena, so
+   each `+` extends it in place -- and prepend it to the body ONCE.
+   The same operator, used the way it is cheap. *)
+PROCEDURE PadLeft (RO s: STR ; width: I64) : STR =
+VAR
+  pad : STR ;
+  i : I64 ;
+BEGIN
+  pad := '' ;
+  FOR i := LEN (s) + 1 TO width DO pad := pad + ' ' END ;
+  RETURN pad + s
+END PadLeft ;
+
+CONST Big = 20000 ;            (* for the timing, when asked *)
+
+VAR
+  t0, t1 : Time.Instant ;
+  slow, fast : F64 ;
+  s : STR ;
+  c : CHAR ;
+
+BEGIN
+  BEGIN
+    Io.WriteLine ('[' + PadWrong ('42', 8) + ']  PadWrong: named left, pads right') ;
+    Io.WriteLine ('[' + PadSlow ('42', 8) + ']  PadSlow: correct, and quadratic') ;
+    Io.WriteLine ('[' + PadLeft ('42', 8) + ']  PadLeft: correct, and linear') ;
+    Io.WriteLine ('[' + Fmt.I64Pad (42, 8, FALSE)
+                  + ']  Fmt.I64Pad: for a number, the library already has it') ;
+
+    (* a CHAR joins on either side: one code point, and no format to
+       choose -- which is why a NUMBER does not (see X12Int) *)
+    c := '*' ;
+    Io.WriteLine ('[' + ('42' + c) + ']  a CHAR appended, [' + (c + '42')
+                  + '] prepended') ;
+
+    (* run with any argument to see the cost of prepending *)
+    IF Io.ArgCount () > 1 THEN
+      t0 := Time.Now () ;
+      s := PadSlow ('x', Big) ;
+      t1 := Time.Now () ;
+      slow := Time.Elapsed (t0, t1) ;
+      t0 := Time.Now () ;
+      s := PadLeft ('x', Big) ;
+      t1 := Time.Now () ;
+      fast := Time.Elapsed (t0, t1) ;
+      Io.ErrLine ('padding to ' + Fmt.I64Str (Big) + ': PadSlow '
+                  + Fmt.Fixed (slow, 3) + ' s, PadLeft '
+                  + Fmt.Fixed (fast, 4) + ' s') ;
+      Io.ErrLine ('LEN of the result: ' + Fmt.I64Str (LEN (s)))
+    END
+  EXCEPT
+  | ValueRange : Io.ErrLine ('a value out of range')
+  END
+END C12Pad.

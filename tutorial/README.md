@@ -40,6 +40,11 @@ worked example, that is the document to open.
 9. [Preparing data for plotting](09-plotting.md)
 10. [A real dataset, end to end](10-real-data.md)
 11. [Threads: waiting in parallel](11-threads.md)
+12. [Building strings](12-building-strings.md)
+13. [Procedures: calls, returns, and the parameter modes](13-procedures-modes.md)
+14. [A big CSV file, and a CF NetCDF file from two of its columns](14-big-csv.md)
+15. [Statistics: a regression, a test, and what a p-value means](15-statistics.md)
+16. [Threads for computation, and what the cores actually give you](16-threads-compute.md)
 
 ## Running the examples yourself
 

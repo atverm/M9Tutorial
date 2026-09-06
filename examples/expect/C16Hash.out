@@ -1,0 +1,5 @@
+file: 494494 bytes in 8 chunks
+hash sum, one thread:     2587437781992675025
+hash sum, eight threads:  2587437781992675025
+identical: yes
+the same slots folded in reverse order: -3294561009219321149  -- a different number, so the order is part of the definition
