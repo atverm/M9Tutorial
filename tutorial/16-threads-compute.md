@@ -47,7 +47,9 @@ IMPORT Mat ;
 IMPORT Time ;
 
 CONST
-  N = 800 ;                    (* 800 x 800: half a billion multiply-adds *)
+  N = 500 ;                    (* 500 x 500: 125 million multiply-adds; sized
+                                  to run inside the tutorial's 10 s sandbox
+                                  wall on a slow host -- see chapter 16 *)
   Bands = 8 ;
 
 TYPE
@@ -311,8 +313,8 @@ S times the inverse is the identity to 10⁻⁹ is the sanity check that
 the inverse is an inverse at all.
 
 ```output C16Mat
-product of two 800x800 matrices in 8 bands: identical to the serial product, bit for bit
-inverse of a 800x800 SPD matrix in 8 column bands: identical to SpdInverse, bit for bit
+product of two 500x500 matrices in 8 bands: identical to the serial product, bit for bit
+inverse of a 500x500 SPD matrix in 8 column bands: identical to SpdInverse, bit for bit
 S times the inverse is the identity to within 1e-9: yes
 ```
 
@@ -513,8 +515,14 @@ the same slots folded in reverse order: -3294561009219321149  -- a different num
 
 ## What eight cores gave, measured
 
-On this laptop (AMD Ryzen 7 8840U: 8 cores, 16 hardware threads,
-under WSL2), the timings each program prints to stderr, best of two:
+The example above uses 500×500 matrices, sized so the run finishes
+inside the tutorial sandbox's ten-second wall on a slow host. The
+numbers below were measured at **800×800** — about four times the
+arithmetic — on this laptop (AMD Ryzen 7 8840U: 8 cores, 16 hardware
+threads, under WSL2), which is where the threading has enough work
+to show its shape; change the `N` in the source and pass any
+argument to reproduce them. Timings each program prints to stderr,
+best of two:
 
 | work | one thread | 8 bands | speed-up |
 |---|---|---|---|

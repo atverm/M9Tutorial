@@ -1,0 +1,234 @@
+MODULE C17Pipe ;
+
+(* Chapter 17: living in the real world.
+
+   A program that only ever talks to itself is a demo.  A useful one
+   takes PARAMETERS from whoever ran it and DRIVES OTHER PROGRAMS,
+   then reads back what they said.  This one counts word frequencies
+   the way a shell line would -- sort, then uniq -c, then sort again
+   -- but from M9, and without a shell: each stage is its OWN program,
+   run through System.Exec, fed the previous stage's output on its
+   stdin and INSISTED to have succeeded.
+
+   Three things this chapter is really about:
+
+   * A stage's output comes back as a VALUE, and so does its status.
+     System.Exec answers a Result -- the exit status, everything the
+     program wrote to stdout, and everything it wrote to stderr -- so
+     the pipe between two tools is an M9 string, not a temp file, and
+     a stage that FAILED is a status you look at rather than a thing
+     you hope did not happen.  A shell one-liner hides the middle of
+     the pipe; here every stage is checked.
+
+   * The environment is a boundary, and boundaries lie unless they
+     are pinned.  Sort order depends on the locale, so the SAME
+     pipeline gives a different answer on a French machine -- unless
+     LC_ALL=C nails it to bytes.  Exec sets it as an environment
+     OVERRIDE, merged over the inherited environment, so PATH still
+     finds the program.  It is the process-level echo of why Fmt owns
+     its float printing instead of borrowing a locale-dependent
+     printf.
+
+   * A parameter is a DECISION, not an accident.  The count of rows
+     to show is a NAMED option, --top=N, the convention System.Value
+     defines -- never a bare number that could be mistaken for a
+     filename -- and a value that is not a count is reported before
+     the default is used.
+
+   With no arguments it shows the top DefaultTop; run it as
+   `./c17pipe --top=3` to ask for three.                             *)
+
+IMPORT System ;
+IMPORT DynStr ;
+IMPORT Io ;
+IMPORT Fmt ;
+
+CONST
+  DefaultTop = 5 ;
+
+(* the text to count, fixed so the whole run is reproducible.  A
+   CONST cannot be a `+` expression, so the passage is a procedure
+   that composes its literals into HEAP and answers the whole. *)
+PROCEDURE Passage () : STR =
+BEGIN
+  RETURN
+    'the program reads the data and the program checks the data '
+    + 'a program that checks its data and checks its result is a '
+    + 'program you can trust the data does not lie and neither '
+    + 'does the result the program reads the data the program '
+    + 'writes the result'
+END Passage ;
+
+PROCEDURE IsLetter (c: CHAR) : BOOL =
+BEGIN
+  RETURN ((c >= 'a') AND (c <= 'z')) OR ((c >= 'A') AND (c <= 'Z'))
+END IsLetter ;
+
+PROCEDURE Lower (c: CHAR) : CHAR RAISES ValueRange =
+BEGIN
+  IF (c >= 'A') AND (c <= 'Z') THEN
+    RETURN CHR (ORD (c) + 32)
+  END ;
+  RETURN c
+END Lower ;
+
+(* the passage as one lowercase word per line -- the input a
+   sort | uniq pipeline wants.  Anything that is not a letter is a
+   word break. *)
+PROCEDURE WordsOf (VAR pool: POOL ; RO text: STR) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+  inWord : BOOL ;
+BEGIN
+  d := DynStr.New (pool) ;
+  inWord := FALSE ;
+  FOR i := 0 TO LEN (text) - 1 DO
+    IF IsLetter (text[i]) THEN
+      DynStr.AppendChar (pool, d, Lower (text[i])) ;
+      inWord := TRUE
+    ELSIF inWord THEN
+      DynStr.AppendChar (pool, d, 0AC) ;   (* end this word *)
+      inWord := FALSE
+    END
+  END ;
+  IF inWord THEN DynStr.AppendChar (pool, d, 0AC) END ;
+  RETURN DynStr.View (d)
+END WordsOf ;
+
+(* a non-negative integer that is the WHOLE of s, or -1 if it is
+   not one *)
+PROCEDURE ParseInt (RO s: STR) : I64 RAISES IndexError =
+VAR
+  i, v : I64 ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN 0 - 1 END ;
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF (s[i] < '0') OR (s[i] > '9') THEN RETURN 0 - 1 END ;
+    v := v * 10 + (ORD (s[i]) - ORD ('0'))
+  END ;
+  RETURN v
+END ParseInt ;
+
+(* how many rows to show: --top=N, or DefaultTop.  System.Value reads
+   the text after --top= in the options, or answers the default we
+   name here.  A number the parser rejects is reported before the
+   default is used, so a mistyped option is never mistaken for a
+   deliberate omission. *)
+PROCEDURE TopWanted (VAR pool: POOL) : I64 RAISES ValueRange, IndexError =
+VAR
+  s : STR ;
+  n : I64 ;
+BEGIN
+  s := System.Value (pool, '--top', '') ;
+  IF LEN (s) = 0 THEN RETURN DefaultTop END ;
+  n := ParseInt (s) ;
+  IF n >= 0 THEN RETURN n END ;
+  Io.ErrLine ('--top is not a count; showing ' + Fmt.I64Str (DefaultTop)) ;
+  RETURN DefaultTop
+END TopWanted ;
+
+(* run one pipeline stage: prog with args, fed `input` on its stdin,
+   pinned to LC_ALL=C so the byte ordering does not depend on the
+   machine's locale, and INSISTED to have succeeded.  A stage that
+   exits nonzero stops the whole run, naming its status and whatever
+   it wrote to stderr -- because a pipeline that RAN is not a pipeline
+   that WORKED. *)
+PROCEDURE Stage (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                 RO input: STR) : STR
+  RAISES ValueRange, Io.IOError =
+VAR
+  env : SLICE OF STR ;
+  r : System.Result ;
+BEGIN
+  env := NEW (pool, STR, 1) ;
+  env[0] := 'LC_ALL=C' ;
+  r := System.Exec (pool, prog, args, input, env) ;
+  IF r.status # 0 THEN
+    Io.ErrLine (prog + ' exited with status ' + Fmt.I64Str (r.status)) ;
+    IF LEN (r.err) > 0 THEN Io.ErrLine (r.err) END ;
+    Io.Halt (1)
+  END ;
+  RETURN r.out
+END Stage ;
+
+(* uniq -c prints "   COUNT word", the count right-justified in a
+   field of blanks.  Parsing a tool's REAL output -- padded columns
+   and all -- is most of what living in the real world is.  Show the
+   first `top` rows as a ranked table. *)
+PROCEDURE Report (VAR pool: POOL ; RO counts: STR ; top: I64)
+  RAISES ValueRange, IndexError =
+VAR
+  i, j, shown, count : I64 ;
+  word : STR ;
+BEGIN
+  Io.WriteLine ('the ' + Fmt.I64Str (top)
+                + ' most frequent words in the passage:') ;
+  i := 0 ;
+  shown := 0 ;
+  WHILE (i < LEN (counts)) AND (shown < top) DO
+    WHILE (i < LEN (counts)) AND (counts[i] = ' ') DO i := i + 1 END ;
+    count := 0 ;
+    WHILE (i < LEN (counts)) AND (counts[i] >= '0')
+          AND (counts[i] <= '9') DO
+      count := count * 10 + (ORD (counts[i]) - ORD ('0')) ;
+      i := i + 1
+    END ;
+    IF (i < LEN (counts)) AND (counts[i] = ' ') THEN i := i + 1 END ;
+    j := i ;
+    WHILE (j < LEN (counts)) AND (counts[j] # 0AC) DO j := j + 1 END ;
+    word := SLICE (counts, i, j - i) ;
+    IF LEN (word) > 0 THEN
+      shown := shown + 1 ;
+      Io.WriteLine ('  ' + Fmt.I64Str (shown) + '. ' + word
+                    + '  (' + Fmt.I64Str (count) + ')')
+    END ;
+    i := j ;
+    IF (i < LEN (counts)) AND (counts[i] = 0AC) THEN i := i + 1 END
+  END
+END Report ;
+
+VAR
+  pool : POOL ;
+  top : I64 ;
+  none, uniqArgs, sortArgs : SLICE OF STR ;
+  words, sorted, counted, ranked : STR ;
+
+BEGIN
+  BEGIN
+    top := TopWanted (pool) ;
+
+    (* the passage as one lowercase word per line, built in memory --
+       the input the first stage reads on its stdin *)
+    words := WordsOf (pool, Passage ()) ;
+
+    none := NEW (pool, STR, 0) ;
+    uniqArgs := NEW (pool, STR, 1) ;
+    uniqArgs[0] := '-c' ;
+    sortArgs := NEW (pool, STR, 2) ;
+    sortArgs[0] := '-k1,1nr' ;
+    sortArgs[1] := '-k2,2' ;
+
+    (* three stages, each its own program, each checked.  The output
+       of one is the stdin of the next -- an M9 string, not a temp
+       file.  The second sort ranks by count (numeric, descending)
+       then by the word, so ties have a defined order and every run
+       is identical down to the byte. *)
+    sorted := Stage (pool, 'sort', none, words) ;
+    counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
+    ranked := Stage (pool, 'sort', sortArgs, counted) ;
+
+    Report (pool, ranked, top)
+  EXCEPT
+  | Io.IOError (p) :
+      Io.ErrLine ('could not start a pipeline stage:') ;
+      Io.ErrLine (p) ;
+      Io.Halt (1)
+  | ValueRange :
+      Io.ErrLine ('a value was out of range') ; Io.Halt (1)
+  | IndexError :
+      Io.ErrLine ('an index was out of range') ; Io.Halt (1)
+  END
+END C17Pipe.

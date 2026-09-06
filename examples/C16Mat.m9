@@ -23,7 +23,9 @@ IMPORT Mat ;
 IMPORT Time ;
 
 CONST
-  N = 800 ;                    (* 800 x 800: half a billion multiply-adds *)
+  N = 500 ;                    (* 500 x 500: 125 million multiply-adds; sized
+                                  to run inside the tutorial's 10 s sandbox
+                                  wall on a slow host -- see chapter 16 *)
   Bands = 8 ;
 
 TYPE

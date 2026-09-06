@@ -45,6 +45,7 @@ worked example, that is the document to open.
 14. [A big CSV file, and a CF NetCDF file from two of its columns](14-big-csv.md)
 15. [Statistics: a regression, a test, and what a p-value means](15-statistics.md)
 16. [Threads for computation, and what the cores actually give you](16-threads-compute.md)
+17. [Living in the real world: parameters, external programs, and pipelines](17-real-world.md)
 
 ## Running the examples yourself
 
