@@ -24,7 +24,7 @@ IMPORT Stats ;
 
 CONST
   Default = 'data/fluxnet_week.csv' ;
-  OutPath = '/tmp/sehtm.nc' ;
+  OutPath = 'sehtm.nc' ;
   HalfHour = 1800 ;                   (* the file's resolution, seconds *)
   Utc1 = 3600.0 ;                     (* SE-Htm stamps are UTC+1 *)
 

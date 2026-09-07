@@ -41,7 +41,7 @@ IMPORT Stats ;
 
 CONST
   Default = 'data/fluxnet_week.csv' ;
-  OutPath = '/tmp/sehtm.nc' ;
+  OutPath = 'sehtm.nc' ;
   HalfHour = 1800 ;                   (* the file's resolution, seconds *)
   Utc1 = 3600.0 ;                     (* SE-Htm stamps are UTC+1 *)
 
@@ -277,7 +277,7 @@ rows 336, columns in the file 244, parsed 3
 from 2023-07-02T23:00:00Z to 2023-07-09T22:30:00Z UTC
 NEE_VUT_REF: 336 of 336 present, mean -3.231 umol m-2 s-1
 TA_F:        336 of 336 present, mean 15.634 degC
-wrote /tmp/sehtm.nc, read back 336 rows
+wrote sehtm.nc, read back 336 rows
 both columns identical after the round trip: yes
 ```
 

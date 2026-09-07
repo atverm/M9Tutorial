@@ -2,8 +2,9 @@
 
 The compiler, runtime and standard library this tutorial teaches are
 in the [m9c](https://github.com/atverm/m9c) repository (`./build.sh`
-needs gcc and nothing else), and so are the install packages for six
-distributions, on its [release page](https://github.com/atverm/m9c/releases).
+needs gcc and nothing else), and so are the install packages for six Linux
+distributions -- and, from 0.8.0, an **experimental** Windows zip --
+on its [release page](https://github.com/atverm/m9c/releases).
 
 M9 (Modula-9) is a Wirth-family language for scientific computing,
 designed for machine-written, human-audited code.  It is **not
@@ -51,7 +52,7 @@ by worked example; that is where the rules live.
 
 ## Install
 
-The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.7.0)
+The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.8.0)
 carries one package per distribution — Ubuntu 24.04 and 26.04,
 Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
 each built on
@@ -60,10 +61,10 @@ compile and run an M9 program there before it was published; the
 `.receipt` beside each says on what, with which gcc, and its sha256.
 gcc is the only compiler any of them needs.  For Ubuntu 24.04:
 
-    sudo apt install ./m9_0.7.0-1_amd64.ubuntu24.04.deb
+    sudo apt install ./m9_0.8.0-1_amd64.ubuntu24.04.deb
 
-(`dnf install ./m9-0.7.0-1.fc43.x86_64.rpm`, `./m9-0.7.0-1.el9.x86_64.rpm`,
-`pacman -U ./m9-0.7.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
+(`dnf install ./m9-0.8.0-1.fc43.x86_64.rpm`, `./m9-0.8.0-1.el9.x86_64.rpm`,
+`pacman -U ./m9-0.8.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
 of the tutorial has the whole table.)  This installs `m9c` (the compiler), the runtime, the standard
 library as readable M9 source in `/usr/lib/m9`, per-module reference
 pages in `/usr/share/doc/m9/modules`, `man m9c`, and a VS Code
@@ -76,6 +77,14 @@ extension (syntax highlighting, hover documentation, completion) at
 The package is built on Ubuntu 26.04 for amd64.  On another release
 the C library versions will not match — the compiler itself needs
 nothing but gcc, so building from source is the route there.
+
+**Windows, experimental.**  The same page carries
+`m9-0.8.0-windows-x86_64.zip`: one folder with its own gcc in it and
+an `install.bat` that compiles the compiler on your machine.  It is
+verified under wine and on one Windows machine, and two chapters do
+not work there yet — 14 (netCDF resolves paths its own way on
+Windows) and 17 (it runs `sort` and `uniq`).  Chapter 0 has the
+details.
 
 ## The first program
 

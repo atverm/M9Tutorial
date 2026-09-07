@@ -315,6 +315,34 @@ throws away the statuses in between. Running each stage as its own
 program is what makes every failure a value rather than a thing you
 hope did not happen.
 
+## A program that never finishes
+
+`System.Exec` waits as long as the stage takes, which is right for a
+pipeline: `sort` on a large file is slow, not stuck, and no number you
+could write down would tell the two apart. But when the program is one
+*you did not write* — a cell a reader typed, a tool that may hang on a
+network — waiting for ever is a decision too, and usually the wrong
+one. `System.ExecWithin` is `Exec` with a deadline:
+
+    r := System.ExecWithin (pool, prog, args, input, env, 10.0) ;
+    IF r.stopped THEN
+      Io.ErrLine (prog + ' was still running after ten seconds') ;
+      Io.ErrLine (r.out)            (* what it had printed by then *)
+    END ;
+
+Three things are worth knowing about it. The deadline covers the
+**whole run**, not just the program's exit: a stage that has finished
+while something *it* started still holds its output is the case that
+otherwise waits for ever. When the time runs out, the program **and
+everything it started** are stopped together. And a stopped run still
+reports — `out` and `err` hold what was written before the deadline,
+so you can say what it was doing when it was stopped instead of
+showing a blank page.
+
+The tutorial you may be reading this in uses it: on Windows it runs
+your cells with a limit, because a cell that loops for ever would
+otherwise take the whole tutorial down with it.
+
 ## The environment is a boundary, and boundaries lie unless you pin them
 
 Look at how `Stage` builds its environment:

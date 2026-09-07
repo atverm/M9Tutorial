@@ -10,7 +10,7 @@ claim is tested, not asserted.
 
 ## Route 1: the install package
 
-The [release page](https://github.com/atverm/m9c/releases/tag/v0.7.0)
+The [release page](https://github.com/atverm/m9c/releases/tag/v0.8.0)
 of the compiler's repository, [m9c](https://github.com/atverm/m9c),
 carries one package per distribution, x86-64, each built ON that
 distribution from the same source tarball (the
@@ -19,12 +19,12 @@ every example in these chapters):
 
 | distribution | package | install |
 |---|---|---|
-| Ubuntu 24.04 LTS | `m9_0.7.0-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.7.0-1_amd64.ubuntu24.04.deb` |
-| Ubuntu 26.04 LTS | `m9_0.7.0-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.7.0-1_amd64.ubuntu26.04.deb` |
-| Debian 13 | `m9_0.7.0-1_amd64.debian13.deb` | `sudo apt install ./m9_0.7.0-1_amd64.debian13.deb` |
-| Fedora 43 | `m9-0.7.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.7.0-1.fc43.x86_64.rpm` |
-| Rocky 9 (RHEL 9, Alma 9) | `m9-0.7.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.7.0-1.el9.x86_64.rpm` |
-| Arch | `m9-0.7.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.7.0-1-x86_64.pkg.tar.zst` |
+| Ubuntu 24.04 LTS | `m9_0.8.0-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.8.0-1_amd64.ubuntu24.04.deb` |
+| Ubuntu 26.04 LTS | `m9_0.8.0-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.8.0-1_amd64.ubuntu26.04.deb` |
+| Debian 13 | `m9_0.8.0-1_amd64.debian13.deb` | `sudo apt install ./m9_0.8.0-1_amd64.debian13.deb` |
+| Fedora 43 | `m9-0.8.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.8.0-1.fc43.x86_64.rpm` |
+| Rocky 9 (RHEL 9, Alma 9) | `m9-0.8.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.8.0-1.el9.x86_64.rpm` |
+| Arch | `m9-0.8.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.8.0-1-x86_64.pkg.tar.zst` |
 
 Each package comes with a `.receipt` beside it — the distribution it
 was built on, its sha256, the tarball it came from, the gcc that
@@ -59,6 +59,44 @@ live (installed via route 1, neither variable is needed):
 
 `./build.sh DESTDIR` also installs the route-1 layout under a
 prefix, which is exactly how the package itself is assembled.
+
+## Route 3: Windows — experimental
+
+`m9-0.8.0-windows-x86_64.zip` on the same release page is one folder
+with everything in it: **its own gcc** (a subset of the MSYS2 UCRT64
+toolchain), the compiler's bootstrap C, the standard library and the
+tools as M9 source, this tutorial as pages, and an `install.bat`.
+
+    (unpack the zip anywhere -- your Documents folder is fine)
+    cd m9-0.8.0-windows-x86_64
+    install.bat
+
+Run it **from a terminal** rather than by double-clicking: that is
+what keeps Windows from asking whether you trust a file you just
+downloaded, and it is where you will read what it says.  It opens by
+telling you what it will put in the folder and that your machine is
+about to compile the compiler from its own C — the same claim route 2
+makes, with the gcc in the box — and then asks once.  About half a
+minute later there is a `bin\m9c.exe` your machine built.
+
+Two things it asks about separately, because they are the only ones
+that write outside the folder: the **VS Code extension** (into
+`%USERPROFILE%\.vscode\extensions`) and your **PATH**.  Decline
+either and it says how to do it by hand.  At the end it offers to
+start the tutorial locally — the same pages you are reading, served
+from that folder, with every example runnable in the browser and
+compiled by the `m9c` you just installed.
+
+**Experimental means experimental.**  The Windows build is the same
+compiler as the Linux one — the runtime carries `_WIN32` paths beside
+the POSIX ones and the *generated* C never names a platform — but it
+is verified under wine and on one real Windows machine, where Linux
+is tested across six distributions.  Two chapters do not work there
+yet: **chapter 14**, because netCDF resolves paths through its own
+Windows converter, and **chapter 17**, because it runs `sort` and
+`uniq` and Windows has neither.  The rest, zarr over TLS and threads
+included, runs.  If something else breaks, that is worth reporting —
+it is what the label is for.
 
 ## The first program
 
@@ -184,7 +222,7 @@ which the server does not yet.
 
 ## Checking the installation
 
-    m9c --version                 m9c 0.7.0
+    m9c --version                 m9c 0.8.0
     man m9c                       the reference, options and the
                                   supplied-flags contract
     ls /usr/share/doc/m9/modules  the standard library, one page
