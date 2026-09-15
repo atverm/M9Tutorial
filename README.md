@@ -53,7 +53,7 @@ by worked example; that is where the rules live.
 
 ## Install
 
-The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.9.0)
+The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.10.0)
 carries one package per distribution — Ubuntu 24.04 and 26.04,
 Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
 each built on
@@ -62,10 +62,10 @@ compile and run an M9 program there before it was published; the
 `.receipt` beside each says on what, with which gcc, and its sha256.
 gcc is the only compiler any of them needs.  For Ubuntu 24.04:
 
-    sudo apt install ./m9_0.9.0-1_amd64.ubuntu24.04.deb
+    sudo apt install ./m9_0.10.0-1_amd64.ubuntu24.04.deb
 
-(`dnf install ./m9-0.9.0-1.fc43.x86_64.rpm`, `./m9-0.9.0-1.el9.x86_64.rpm`,
-`pacman -U ./m9-0.9.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
+(`dnf install ./m9-0.10.0-1.fc43.x86_64.rpm`, `./m9-0.10.0-1.el9.x86_64.rpm`,
+`pacman -U ./m9-0.10.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
 of the tutorial has the whole table.)  This installs `m9c` (the compiler), the runtime, the standard
 library as readable M9 source in `/usr/lib/m9`, per-module reference
 pages in `/usr/share/doc/m9/modules`, `man m9c`, and a VS Code
@@ -80,7 +80,7 @@ the C library versions will not match — the compiler itself needs
 nothing but gcc, so building from source is the route there.
 
 **Windows, experimental.**  The same page carries
-`m9-0.9.0-windows-x86_64.zip`: one folder with its own gcc in it and
+`m9-0.10.0-windows-x86_64.zip`: one folder with its own gcc in it and
 an `install.bat` that compiles the compiler on your machine.  It is
 verified under wine and on one Windows machine, and two chapters do
 not work there yet — 14 (netCDF resolves paths its own way on
