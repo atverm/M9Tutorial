@@ -7,17 +7,18 @@ distributions -- and, from 0.8.0, an **experimental** Windows zip --
 on its [release page](https://github.com/atverm/m9c/releases).
 
 M9 (Modula-9) is a Wirth-family language for scientific computing,
-designed for machine-written, human-audited code.  It is **not
-designed for human convenience**: it is verbose, clear, reliable and
-auditable.  You get exactly what is written — and when what is
-written is wrong, the compiler tells you and refuses to run it.
+designed so the result can be trusted and reproduced — by your
+reviewer, by your future self, by whoever inherits the code.  You
+get exactly what is written, and when what is written is wrong the
+compiler tells you and refuses to run it, rather than letting the
+program go quietly on and publish a number no one can reproduce.
 Every import is named, every numeric width is exact, every error a
-procedure can raise is in its signature, every allocation says which
-pool owns it, and the checks are part of what a program *means*:
-there is no build in which they are absent.  That makes it a good
-language for code written by AI agents, for human programmers — and
-above all for the human reviewer who has to certify work she did not
-write.
+procedure can raise is written in its signature, every allocation
+says which pool owns it — and the safety checks are part of what a
+program *means*, always on, with no build that leaves them out.  The
+cost is a little more typing; the return is code a colleague, a
+reviewer, or a student can read and trust without running it, that
+still rebuilds and gives the same bits years from now.
 
 **The tutorial is live at
 [tutorial.modula9.net](https://tutorial.modula9.net)** — every code

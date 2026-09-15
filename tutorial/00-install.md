@@ -8,6 +8,20 @@ and a CI gate builds the whole thing on a machine where every other
 compiler has been replaced by a script that fails loudly — so the
 claim is tested, not asserted.
 
+For your work that means something concrete: what you build today
+rebuilds the same way in ten years, with a compiler every machine
+already has, and no chain of pinned versions to keep alive for the
+analysis to run again.
+
+It is also an unusually good language to have an AI write for you,
+and for the same reason it is good to review: the explicitness the
+compiler insists on — every import named, every width exact, every
+error a procedure can raise declared, every allocation owned — lets
+it act as a strict reviewer of whatever a model produces, refusing
+the quiet mistakes a code generator makes rather than running them.
+Code you did not write by hand arrives already checked, which is
+exactly what you need before you trust a number it computed.
+
 ## Route 1: the install package
 
 The [release page](https://github.com/atverm/m9c/releases/tag/v0.9.0)

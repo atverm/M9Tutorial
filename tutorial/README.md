@@ -1,14 +1,14 @@
 # Scientific programming in Modula-9 — first steps
 
-M9 is **not designed for human convenience**.  It is designed to be
-verbose, clear, reliable and auditable.  You get exactly what is
-written, and when what is written is wrong, the compiler tells you
-and refuses to run it.  That makes it a good language for code
-written by AI agents, a good language for human programmers — and
-the best language we know how to build for the **human reviewer**,
-who has to certify work she did not write.  The extra effort of
-stating clearly what you want, in the code, pays off enormously
-later: in the review, in the re-run, in the audit two years on.
+M9 is a Wirth-family language for scientific computing, designed so
+the result can be **trusted and reproduced** — by your reviewer, by
+your future self, by whoever inherits the code.  You get exactly
+what is written, and when what is written is wrong, the compiler
+tells you and refuses to run it, rather than letting the program go
+quietly on and publish a number no one can reproduce.  The extra
+effort of stating clearly what you want, in the code, pays off later
+where it matters most: in the review, in the re-run, in the audit
+two years on.
 
 Every feature in the language cites a real failure it makes
 uncompilable — the failures live in the repository as programs that

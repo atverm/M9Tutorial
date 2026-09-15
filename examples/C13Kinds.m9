@@ -1,0 +1,55 @@
+MODULE C13Kinds ;
+
+(* Chapter 13.  An ENUMERATION is a type that is a fixed, named set of
+   values -- a quality flag, an instrument state, a category.  It is a
+   case record with no payload, so the total-CASE rule from this
+   chapter applies: every value is covered, no ELSE, and a value added
+   to the type later breaks every CASE that forgot it -- at compile
+   time, not in a run.  NAME turns a value into its own identifier
+   text, and an ARRAY indexed by the type tallies one slot per value
+   with no ordinals written down anywhere. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+TYPE Quality = (Good, Suspect, Bad) ;
+
+PROCEDURE Keep (q: Quality) : BOOL =
+  (* which readings survive quality control.  Total over Quality: add
+     a fourth flag and this procedure will not compile until it says
+     what to do with it. *)
+BEGIN
+  CASE q OF
+  | Good : RETURN TRUE
+  | Suspect : RETURN TRUE
+  | Bad : RETURN FALSE
+  END
+END Keep ;
+
+VAR
+  pool  : POOL ;
+  flags : SLICE OF Quality ;        (* eight readings, each flagged *)
+  tally : ARRAY Quality OF I64 ;    (* one count per quality, indexed
+                                       BY the type: no ordinals *)
+  q : Quality ;
+  i, kept : I64 ;
+
+BEGIN
+  flags := NEW (pool, Quality, 8) ;
+  flags[0] := Quality.Good ;    flags[1] := Quality.Good ;
+  flags[2] := Quality.Suspect ; flags[3] := Quality.Bad ;
+  flags[4] := Quality.Good ;    flags[5] := Quality.Suspect ;
+  flags[6] := Quality.Good ;    flags[7] := Quality.Bad ;
+
+  FOR q := Quality.Good TO Quality.Bad DO tally[q] := 0 END ;
+  kept := 0 ;
+  FOR i := 0 TO 7 DO
+    tally[flags[i]] := tally[flags[i]] + 1 ;
+    IF Keep (flags[i]) THEN kept := kept + 1 END
+  END ;
+
+  FOR q := Quality.Good TO Quality.Bad DO
+    Io.WriteLine (NAME (q) + ': ' + Fmt.I64Str (tally[q]))
+  END ;
+  Io.WriteLine ('kept ' + Fmt.I64Str (kept) + ' of 8')
+END C13Kinds.

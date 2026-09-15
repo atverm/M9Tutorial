@@ -1,12 +1,13 @@
 # 2 — Strong typing
 
-The width of a number is part of its meaning.  The failure behind
-this chapter: a Modula-2 compiler mapped `LONGREAL` to the x87
-80-bit format, which occupies sixteen bytes in memory — so a loop
-reading 8-byte doubles off the wire strode through them at the
-wrong width and read garbage from the second element on.  Nothing
-warned, because the language's own type said "a long real", and
-what that meant depended on the compiler.
+The width of a number is part of its meaning.  A scientist reads and
+writes numbers as bytes constantly — a netCDF variable, a zarr chunk,
+a column of doubles from an instrument — and the code reads them back
+correctly only if the width it expects is exactly the width on disk.
+When the type name leaves that width for the compiler to decide, the
+same program can read different bytes on different machines, and
+nothing warns you: from the second value on, the numbers are quietly
+wrong.
 
 In M9 every numeric type names its width — `I8`..`I64`, `U8`..`U64`,
 `F32`, `F64`, `BYTE` — and **nothing converts implicitly**, not even
@@ -48,10 +49,11 @@ the second rule.
 ## Conversions are calls, and they can fail
 
 `I64 (x)` is an ordinary-looking call with a checked meaning: if
-the value does not fit the target, it raises `ValueRange`.  The
-museum piece behind it: `Trunc(NaN)` crashed one runtime and, in a
-well-known array library, silently answers the most negative
-integer — a number that then flows onward into someone's mean.
+the value does not fit the target, it raises `ValueRange`.  This is
+not fussiness.  Turning a NaN into an integer has no honest answer,
+and the common ones are worse than a stop: one widely used array
+library silently returns the most negative integer, a number that
+then flows on into someone's mean and is never noticed.
 
 ```m9 C2Widths.m9
 MODULE C2Widths ;

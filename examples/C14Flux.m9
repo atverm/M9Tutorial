@@ -130,7 +130,7 @@ BEGIN
     (* counted, not asserted: the columns that were actually parsed *)
     parsed := 0 ;
     FOR c := 0 TO Csv.Cols (t) - 1 DO
-      IF Csv.KindCodeAt (t, c) # Csv.KindSkip THEN parsed := parsed + 1 END
+      IF Csv.IsSet (t, c) THEN parsed := parsed + 1 END
     END ;
     Io.WriteLine ('rows ' + Fmt.I64Str (Csv.Rows (t))
                   + ', columns in the file ' + Fmt.I64Str (Csv.Cols (t))

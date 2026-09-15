@@ -10,11 +10,12 @@ no longer compile.  Nothing in M9 is there because it is elegant.
 Everything is there because its absence, somewhere, cost somebody a
 result.
 
-Before the first example, the philosophy in one paragraph.  **M9 is
-not optimised for the writer's convenience.**  It is verbose where
-verbosity is information: every import is named, every error a
-procedure can raise is in its signature, every allocation says which
-pool owns it, every conversion between types is written out.  You
+Before the first example, the philosophy in one paragraph.  **M9
+optimises for the reader, not the writer** — for the trust and the
+re-run, not the first draft.  It is verbose where verbosity is
+information: every import is named, every error a procedure can raise
+is in its signature, every allocation says which pool owns it, every
+conversion between types is written out.  You
 get exactly what is written — and when what is written is wrong, the
 compiler refuses it, by name, instead of running something
 plausible.  This is a deliberate trade.  Code is written once, but

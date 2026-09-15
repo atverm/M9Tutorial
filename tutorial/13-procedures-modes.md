@@ -201,8 +201,9 @@ report par 4.2 cover it.
 `Sign` has three branches and three `RETURN`s.  Remove the `ELSE`
 and the checker refuses the procedure: there is a path that reaches
 `END` without answering, and in Pascal or C that path would deliver
-whatever happened to be in the result register.  The museum's
-`partial-case` piece is the failure that made this a rule.
+whatever happened to be in the result register — a garbage number
+that looks as real as any other and travels straight into your
+results.  M9 will not compile a function that can fall off its end.
 
 ## "Maybe" is a type, not a null pointer
 
@@ -215,9 +216,96 @@ the guard:
     IF Nearest (pts, origin, 2.0) IS SOME p THEN ... ELSE ... END
 
 `p` exists only inside the THEN, and only when there is something
-for it to be.  There is no way to write the faith-based
-dereference; the museum's `unguarded-opt` piece is the program that
-tried.
+for it to be.  There is no way to write the faith-based dereference
+that turns an empty result into a crash — the guard is the only door
+to the value, so the case where there is nothing cannot be forgotten.
+
+## Enumerations: a type that is a fixed set of names
+
+Much of what a scientist records is categorical, not numeric: a
+quality flag, an instrument state, a land-cover class.  Written as
+bare integers -- `0` good, `1` suspect, `2` bad -- the meaning lives
+in a comment somewhere and the compiler cannot help when a `3` slips
+in or two tables disagree on what `1` meant.  An **enumeration** makes
+the set of values a type:
+
+```m9 C13Kinds.m9
+MODULE C13Kinds ;
+
+(* Chapter 13.  An ENUMERATION is a type that is a fixed, named set of
+   values -- a quality flag, an instrument state, a category.  It is a
+   case record with no payload, so the total-CASE rule from this
+   chapter applies: every value is covered, no ELSE, and a value added
+   to the type later breaks every CASE that forgot it -- at compile
+   time, not in a run.  NAME turns a value into its own identifier
+   text, and an ARRAY indexed by the type tallies one slot per value
+   with no ordinals written down anywhere. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+TYPE Quality = (Good, Suspect, Bad) ;
+
+PROCEDURE Keep (q: Quality) : BOOL =
+  (* which readings survive quality control.  Total over Quality: add
+     a fourth flag and this procedure will not compile until it says
+     what to do with it. *)
+BEGIN
+  CASE q OF
+  | Good : RETURN TRUE
+  | Suspect : RETURN TRUE
+  | Bad : RETURN FALSE
+  END
+END Keep ;
+
+VAR
+  pool  : POOL ;
+  flags : SLICE OF Quality ;        (* eight readings, each flagged *)
+  tally : ARRAY Quality OF I64 ;    (* one count per quality, indexed
+                                       BY the type: no ordinals *)
+  q : Quality ;
+  i, kept : I64 ;
+
+BEGIN
+  flags := NEW (pool, Quality, 8) ;
+  flags[0] := Quality.Good ;    flags[1] := Quality.Good ;
+  flags[2] := Quality.Suspect ; flags[3] := Quality.Bad ;
+  flags[4] := Quality.Good ;    flags[5] := Quality.Suspect ;
+  flags[6] := Quality.Good ;    flags[7] := Quality.Bad ;
+
+  FOR q := Quality.Good TO Quality.Bad DO tally[q] := 0 END ;
+  kept := 0 ;
+  FOR i := 0 TO 7 DO
+    tally[flags[i]] := tally[flags[i]] + 1 ;
+    IF Keep (flags[i]) THEN kept := kept + 1 END
+  END ;
+
+  FOR q := Quality.Good TO Quality.Bad DO
+    Io.WriteLine (NAME (q) + ': ' + Fmt.I64Str (tally[q]))
+  END ;
+  Io.WriteLine ('kept ' + Fmt.I64Str (kept) + ' of 8')
+END C13Kinds.
+```
+
+```output C13Kinds
+Good: 4
+Suspect: 2
+Bad: 2
+kept 6 of 8
+```
+
+An enumeration is a case record with no payload, so the total-CASE
+rule from `Sign` above applies to it directly: `Keep` covers every
+`Quality`, needs no `ELSE`, and the day someone adds a fourth flag it
+stops compiling until it says what to do with the new one -- the
+opposite of an integer `switch` that silently falls through.  `NAME`
+turns a value into its own identifier text, so a report reads `Good`,
+`Suspect`, `Bad` without a hand-written table that can drift from the
+type.  `FOR q := Quality.Good TO Quality.Bad` walks the members in
+order, and `ARRAY Quality OF I64` gives one tally slot per value,
+indexed by the value itself -- `tally[flags[i]]`, with no ordinal
+written down and no way to index past the end, because the index *is*
+the type.
 
 ## What the checker refuses
 
