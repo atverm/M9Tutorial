@@ -19,6 +19,7 @@ MODULE C15Stats ;
    command line); this time only two columns and no time series.  *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Math ;
@@ -183,7 +184,7 @@ BEGIN
   | Csv.RangeError : Io.ErrLine ('CSV: a value out of range') ; Io.Halt (1)
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
   | Stats.TooFew : Io.ErrLine ('too few values for that statistic') ; Io.Halt (1)
-  | Stats.BadArg : Io.ErrLine ('a statistic refused its argument') ; Io.Halt (1)
+  | Faults.BadArg : Io.ErrLine ('a statistic refused its argument') ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
   END
 END C15Stats.
@@ -251,7 +252,7 @@ NEE when TA is above its median 15.08 degC against below it:
   t -10.08  dof 303.5  p 8.42e-21
 
 normal fit of NEE: mu -3.231, sigma 9.685
-three draws from it: -7.926 10.014 -13.524
+three draws from it: -1.402 -2.102 -4.142
 in 1000 series with that mean and spread and no relation to TA, |slope| reached 1.0798: 0 times
 ```
 

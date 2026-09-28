@@ -8,6 +8,7 @@ MODULE C7Series ;
    the epoch exactly as polars' group_by_dynamic aligns them.       *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Time ;
@@ -63,9 +64,9 @@ EXCEPT
     Io.ErrLine ('column type mismatch') ; Io.Halt (1)
 | Frame.Unknown :
     Io.ErrLine ('no such column') ; Io.Halt (1)
-| Frame.BadArg :
+| Faults.BadArg :
     Io.ErrLine ('bad argument') ; Io.Halt (1)
-| Frame.SizeError :
+| Faults.SizeError :
     Io.ErrLine ('sizes disagree') ; Io.Halt (1)
 | Frame.Disorder :
     Io.ErrLine ('time is not ascending') ; Io.Halt (1)

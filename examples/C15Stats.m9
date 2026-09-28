@@ -9,6 +9,7 @@ MODULE C15Stats ;
    command line); this time only two columns and no time series.  *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Math ;
@@ -173,7 +174,7 @@ BEGIN
   | Csv.RangeError : Io.ErrLine ('CSV: a value out of range') ; Io.Halt (1)
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
   | Stats.TooFew : Io.ErrLine ('too few values for that statistic') ; Io.Halt (1)
-  | Stats.BadArg : Io.ErrLine ('a statistic refused its argument') ; Io.Halt (1)
+  | Faults.BadArg : Io.ErrLine ('a statistic refused its argument') ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
   END
 END C15Stats.

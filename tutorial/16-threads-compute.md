@@ -42,6 +42,7 @@ MODULE C16Mat ;
    at the end can demand identical bytes rather than a tolerance.  *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Mat ;
 IMPORT Time ;
@@ -130,7 +131,7 @@ BEGIN
         END
       END
     EXCEPT
-    | Mat.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
+    | Faults.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
     END
   END ;
   Finish (j.w)
@@ -159,7 +160,7 @@ BEGIN
         END
       END
     EXCEPT
-    | Mat.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
+    | Faults.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
     END
   END ;
   Finish (j.w)
@@ -290,7 +291,7 @@ BEGIN
       Io.WriteLine ('S times the inverse is the identity to within 1e-9: NO')
     END
   EXCEPT
-  | Mat.SizeError : Io.ErrLine ('a matrix had the wrong shape') ; Io.Halt (1)
+  | Faults.SizeError : Io.ErrLine ('a matrix had the wrong shape') ; Io.Halt (1)
   | Mat.NotSPD : Io.ErrLine ('S is not positive definite') ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
   END
@@ -564,7 +565,7 @@ The monitor's fields are reachable only from procedures bound to it
 `j.w.next` from anywhere else; that is why nothing initialises the
 monitor from the main body (pool storage is already zero). A worker
 that raises with nothing to catch it stops the whole program, by
-design, so each worker here catches `Mat.SizeError` itself.
+design, so each worker here catches `Faults.SizeError` itself.
 
 What the compiler does *not* check is that the bands are disjoint:
 `Mat.Set (j.prod, r0 + r, c, ...)` from eight threads is a data race

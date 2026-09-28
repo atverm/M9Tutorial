@@ -51,6 +51,7 @@ MODULE C10Icos ;
    doi:10.18160/JZ2X-GZGU.                                          *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Math ;
 IMPORT Mat ;
@@ -71,7 +72,7 @@ CONST
                                 that the phase moves under a day *)
 
 PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i: I64) : F64
-  RAISES ZarrStore.IOError =
+  RAISES ZarrStore.StoreError =
   (* element i of a 1-D array, checked against the store's shape.
 
        arr -- VAR because a read can grow the chunk cache.
@@ -83,7 +84,7 @@ BEGIN
 END At ;
 
 PROCEDURE AtI (VAR arr: PTR ZarrStore.Array ; i: I64) : I64
-  RAISES ZarrStore.IOError, ValueRange =
+  RAISES ZarrStore.StoreError, ValueRange =
   (* the integer twin: ValueRange is the store handing back
      something an I64 cannot hold -- declared, because chapter 2. *)
 VAR ix : ARRAY 1 OF I64 ;
@@ -217,7 +218,7 @@ BEGIN
   Io.WriteI64 (LEN (svg)) ;
   Io.WriteLine (' bytes')
 EXCEPT
-| ZarrStore.IOError :
+| ZarrStore.StoreError :
     Io.ErrLine ('store unreachable -- is the local server running?') ;
     Io.Halt (1)
 | ZarrStore.FormatError (what) :
@@ -226,7 +227,7 @@ EXCEPT
 | Mat.NotSPD (row) :
     Io.ErrLine ('normal equations not positive definite') ;
     Io.Halt (1)
-| Mat.SizeError (a, bb) :
+| Faults.SizeError (a, bb) :
     Io.ErrLine ('matrix sizes disagree') ;
     Io.Halt (1)
 | ValueRange :

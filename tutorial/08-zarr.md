@@ -47,7 +47,7 @@ VAR
   x    : F64 ;
 
 PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i, j: I64) : F64
-  RAISES ZarrStore.IOError =
+  RAISES ZarrStore.StoreError =
 VAR ix : ARRAY 2 OF I64 ;
 BEGIN
   ix [0] := i ;
@@ -82,7 +82,7 @@ BEGIN
   ZarrStore.CloseArray (a) ;
   ZarrStore.Close (st)
 EXCEPT
-| ZarrStore.IOError :
+| ZarrStore.StoreError :
     Io.ErrLine ('store unreachable -- is the local server running?') ;
     Io.Halt (1)
 | ZarrStore.FormatError (what) :

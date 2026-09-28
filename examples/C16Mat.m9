@@ -18,6 +18,7 @@ MODULE C16Mat ;
    at the end can demand identical bytes rather than a tolerance.  *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Mat ;
 IMPORT Time ;
@@ -106,7 +107,7 @@ BEGIN
         END
       END
     EXCEPT
-    | Mat.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
+    | Faults.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
     END
   END ;
   Finish (j.w)
@@ -135,7 +136,7 @@ BEGIN
         END
       END
     EXCEPT
-    | Mat.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
+    | Faults.SizeError : Io.ErrLine ('a band had the wrong shape') ; Io.Halt (2)
     END
   END ;
   Finish (j.w)
@@ -266,7 +267,7 @@ BEGIN
       Io.WriteLine ('S times the inverse is the identity to within 1e-9: NO')
     END
   EXCEPT
-  | Mat.SizeError : Io.ErrLine ('a matrix had the wrong shape') ; Io.Halt (1)
+  | Faults.SizeError : Io.ErrLine ('a matrix had the wrong shape') ; Io.Halt (1)
   | Mat.NotSPD : Io.ErrLine ('S is not positive definite') ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
   END

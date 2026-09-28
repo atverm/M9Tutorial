@@ -15,6 +15,7 @@ MODULE C14Flux ;
    timestamps are LOCAL STANDARD TIME, one hour ahead of UTC.       *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Frame ;
@@ -184,10 +185,10 @@ BEGIN
       Io.Halt (1)
   | Csv.RangeError : Io.ErrLine ('CSV: a value out of range') ; Io.Halt (1)
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
-  | Frame.SizeError : Io.ErrLine ('frame: size') ; Io.Halt (1)
+  | Faults.SizeError : Io.ErrLine ('frame: size') ; Io.Halt (1)
   | Frame.Duplicate : Io.ErrLine ('frame: duplicate column') ; Io.Halt (1)
   | Frame.Disorder : Io.ErrLine ('frame: time not increasing') ; Io.Halt (1)
-  | Frame.BadArg : Io.ErrLine ('frame: bad argument') ; Io.Halt (1)
+  | Faults.BadArg : Io.ErrLine ('frame: bad argument') ; Io.Halt (1)
   | Frame.Unknown : Io.ErrLine ('frame: no such column') ; Io.Halt (1)
   | Frame.WrongType : Io.ErrLine ('frame: wrong column type') ; Io.Halt (1)
   | NetCDF.Error (opP, detailP, statusP) :

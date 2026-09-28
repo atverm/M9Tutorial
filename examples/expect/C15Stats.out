@@ -12,5 +12,5 @@ NEE when TA is above its median 15.08 degC against below it:
   t -10.08  dof 303.5  p 8.42e-21
 
 normal fit of NEE: mu -3.231, sigma 9.685
-three draws from it: -7.926 10.014 -13.524
+three draws from it: -1.402 -2.102 -4.142
 in 1000 series with that mean and spread and no relation to TA, |slope| reached 1.0798: 0 times

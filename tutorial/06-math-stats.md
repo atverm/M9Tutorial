@@ -16,6 +16,7 @@ MODULE C6Stats ;
    y depends on x almost linearly, and the two groups differ.       *)
 
 IMPORT Io ;
+IMPORT Faults ;
 IMPORT Fmt ;
 IMPORT Stats ;
 
@@ -65,7 +66,7 @@ BEGIN
 EXCEPT
 | Stats.TooFew :
     Io.ErrLine ('sample too small') ; Io.Halt (1)
-| Stats.BadArg :
+| Faults.BadArg :
     Io.ErrLine ('bad argument') ; Io.Halt (1)
 | ValueRange :
     Io.ErrLine ('a NaN reached the statistics') ; Io.Halt (1)
