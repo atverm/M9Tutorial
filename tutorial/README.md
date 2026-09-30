@@ -26,6 +26,19 @@ where every rule is stated with the failure that forced it. This
 tutorial never contradicts it; when you want the rule rather than the
 worked example, that is the document to open.
 
+## Where it runs
+
+**Linux x86-64** first: install packages for Ubuntu 24.04 and 26.04,
+Debian 13, Fedora 43, Rocky 9 (the RHEL 9 family) and Arch, or a
+build from source on any Linux that has gcc — nothing else is
+needed, and every gate the language is held to runs there.
+**Windows 10 and 11 (x86-64)**, since 0.8.0, and **macOS on Apple
+silicon**, since 0.12.0, are experimental: the same compiler,
+runtime and library, with each platform's differences under one
+`#ifdef`, verified on one machine of each kind rather than across a
+range.  Chapter 0 has the four install routes and says which two
+chapters do not run on Windows.
+
 ## Chapters
 
 0. [Installing and running the compiler](00-install.md)

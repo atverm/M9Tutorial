@@ -2,9 +2,15 @@
 
 The compiler, runtime and standard library this tutorial teaches are
 in the [m9c](https://github.com/atverm/m9c) repository (`./build.sh`
-needs gcc and nothing else), and so are the install packages for six Linux
-distributions -- and, from 0.8.0, an **experimental** Windows zip --
-on its [release page](https://github.com/atverm/m9c/releases).
+needs gcc and nothing else), and so are the install packages for six
+Linux distributions (Ubuntu 24.04 and 26.04, Debian 13, Fedora 43,
+Rocky 9, Arch), an **experimental** Windows zip since 0.8.0 and an
+**experimental** macOS Homebrew tap since 0.12.0, on its
+[release page](https://github.com/atverm/m9c/releases).  Linux
+x86-64 is the primary platform; the other two are the same compiler
+verified on one machine of each kind.  The m9c repository also
+carries two [Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
+for writing M9 with an AI assistant; chapter 0 says how to use them.
 
 M9 (Modula-9) is a Wirth-family language for scientific computing,
 designed so the result can be trusted and reproduced — by your

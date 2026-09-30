@@ -1,7 +1,8 @@
 # 0 — Installing and running the compiler
 
-There are two routes to a working `m9c`, and both end at the same
-place.  What they need is deliberately small: **the only compiler
+There are two routes to a working `m9c` on Linux, and both end at
+the same place; Windows and macOS each have a route of their own
+below.  What they need is deliberately small: **the only compiler
 required is gcc.**  M9 compiles to C11, the generated C for the
 toolchain itself is checked into the repository as the bootstrap,
 and a CI gate builds the whole thing on a machine where every other
@@ -21,6 +22,20 @@ it act as a strict reviewer of whatever a model produces, refusing
 the quiet mistakes a code generator makes rather than running them.
 Code you did not write by hand arrives already checked, which is
 exactly what you need before you trust a number it computed.
+
+## Where it runs
+
+M9 runs on three platforms today.  **Linux x86-64** is the primary
+one: install packages for Ubuntu 24.04 and 26.04, Debian 13, Fedora
+43, Rocky 9 (the RHEL 9 family) and Arch, or a build from source on
+any Linux that has gcc — every gate the language is held to runs
+there, on every push.  **Windows 10 and 11 (x86-64)** has an
+experimental zip since 0.8.0, route 3 below.  **macOS on Apple
+silicon** has an experimental Homebrew tap since 0.12.0, route 4.
+Experimental means the same compiler, runtime and library, with each
+platform's differences under one `#ifdef`, verified on one machine
+of that kind rather than across a range; the two routes say which
+chapters do not run there and why.
 
 ## Route 1: the install package
 
@@ -258,6 +273,26 @@ sit beside it needs no configuration at all.  Checks run against
 the file on disk: save to see fresh diagnostics.  In VS Code, keep
 using the extension above; it already has hovers and completion,
 which the server does not yet.
+
+## Working with an AI assistant
+
+The top of this chapter said M9 is a good language to have an AI
+write for you.  It is also a language an AI has to be told about,
+because M9 reads like Modula-2 and a model writes what it knows —
+`<>` for not-equal, `'it''s'` for an apostrophe, an import list it
+assumes carries over from the definition — and the checker refuses
+every one of them.  The compiler's repository ships two
+[Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
+for exactly this: `m9`, the short list of what a Pascal or Modula-2
+hand gets wrong in M9, each item pointing at the document that
+settles it; and `m9-lookup`, the procedure for finding what already
+exists before writing it, by asking the compiler (`m9c --json`)
+rather than remembering.  Copy the two directories into your
+project's `.claude/skills/` and Claude Code loads them whenever a
+`.m9` file is written or diagnosed.  They restate no part of the
+language and carry no list of library names — both would drift —
+and point instead at the report, `docs/modules/`, the probes and
+the museum, which the compiler's own gates keep true.
 
 ## Checking the installation
 
