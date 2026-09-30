@@ -87,6 +87,11 @@ not work there yet — 14 (netCDF resolves paths its own way on
 Windows) and 17 (it runs `sort` and `uniq`).  Chapter 0 has the
 details.
 
+**macOS, experimental.**  `brew tap atverm/m9 && brew install m9`
+builds the compiler on your Mac with Homebrew's gcc and installs
+OpenSSL, blosc and netCDF beside it.  Verified on one Apple-silicon
+Mac; every chapter runs there.  Chapter 0 has the details.
+
 ## The first program
 
     git clone https://github.com/atverm/M9Tutorial

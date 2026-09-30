@@ -112,6 +112,31 @@ Windows converter, and **chapter 17**, because it runs `sort` and
 included, runs.  If something else breaks, that is worth reporting —
 it is what the label is for.
 
+## Route 4: macOS — experimental
+
+On a Mac the compiler comes through [Homebrew](https://brew.sh), from
+the same source tarball the Linux packages are built from:
+
+    brew tap atverm/m9
+    brew install m9
+
+That builds `m9c` on your machine with Homebrew's gcc and installs it
+with OpenSSL, blosc and netCDF beside it, so every chapter's program
+links on the first try.  The gcc is the point: Apple's `cc` is clang,
+which takes neither gcc's inliner budget nor a nested function and
+warns on every build, so `m9c` on a Mac drives Homebrew's gcc — the
+arrangement the Windows zip has with the gcc in its box.  `brew
+install` says where the VS Code extension is and the one `ln -s` that
+links it.
+
+**Experimental means experimental.**  It is the same compiler — every
+macOS difference in the runtime and the driver is under `__APPLE__`
+or `macos`, and the *generated* C never names a platform — verified on
+one Apple-silicon Mac, where Linux is tested across six distributions;
+Intel Macs are untested.  Every chapter of this tutorial runs there,
+zarr over TLS and threads included.  If something breaks, that is
+worth reporting — it is what the label is for.
+
 ## The first program
 
     cat > Hello.m9 <<'M9'

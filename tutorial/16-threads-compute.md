@@ -574,3 +574,5 @@ say so. The row range is a contract you hold — the same one chapter
 11 states as *every worker writes at its own index* — and the
 bit-identical comparison at the end is how the program checks it
 kept it.
+
+[← Previous: statistics, a regression, a test, and what a p-value means](15-statistics.md) · [Next: living in the real world →](17-real-world.md)

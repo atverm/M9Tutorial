@@ -294,3 +294,5 @@ This chapter's program links `libnetcdf`, which the repository's
 continuous integration does not have; the gate skips it out loud
 there rather than passing quietly, and runs it everywhere the library
 exists.
+
+[← Previous: procedures, calls, returns and the parameter modes](13-procedures-modes.md) · [Next: statistics, a regression, a test, and what a p-value means →](15-statistics.md)

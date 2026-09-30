@@ -267,3 +267,5 @@ number of zeros in the p-value overstates the evidence. A proper
 treatment thins the series or models the autocorrelation — which is
 a different chapter, and the point of this one is that the program
 states what it assumed, so the reviewer can see it.
+
+[← Previous: a big CSV file, and a CF NetCDF file from two of its columns](14-big-csv.md) · [Next: threads for computation, and what the cores actually give you →](16-threads-compute.md)

@@ -441,3 +441,5 @@ hand it something unexpected eventually. The work of the last
 seventeen chapters is that when they do, the program says so, at the
 line where it happened, instead of computing a confident wrong answer
 and printing it as if it were true.
+
+[← Previous: threads for computation, and what the cores actually give you](16-threads-compute.md)
