@@ -59,7 +59,7 @@ by worked example; that is where the rules live.
 
 ## Install
 
-The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.12.0)
+The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.13.0)
 carries one package per distribution — Ubuntu 24.04 and 26.04,
 Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
 each built on
@@ -68,10 +68,10 @@ compile and run an M9 program there before it was published; the
 `.receipt` beside each says on what, with which gcc, and its sha256.
 gcc is the only compiler any of them needs.  For Ubuntu 24.04:
 
-    sudo apt install ./m9_0.12.0-1_amd64.ubuntu24.04.deb
+    sudo apt install ./m9_0.13.0-1_amd64.ubuntu24.04.deb
 
-(`dnf install ./m9-0.12.0-1.fc43.x86_64.rpm`, `./m9-0.12.0-1.el9.x86_64.rpm`,
-`pacman -U ./m9-0.12.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
+(`dnf install ./m9-0.13.0-1.fc43.x86_64.rpm`, `./m9-0.13.0-1.el9.x86_64.rpm`,
+`pacman -U ./m9-0.13.0-1-x86_64.pkg.tar.zst` for the others; chapter 0
 of the tutorial has the whole table.)  This installs `m9c` (the compiler), the runtime, the standard
 library as readable M9 source in `/usr/lib/m9`, per-module reference
 pages in `/usr/share/doc/m9/modules`, `man m9c`, and a VS Code
@@ -86,7 +86,7 @@ the C library versions will not match — the compiler itself needs
 nothing but gcc, so building from source is the route there.
 
 **Windows, experimental.**  The same page carries
-`m9-0.12.0-windows-x86_64.zip`: one folder with its own gcc in it and
+`m9-0.13.0-windows-x86_64.zip`: one folder with its own gcc in it and
 an `install.bat` that compiles the compiler on your machine.  It is
 verified under wine and on one Windows machine, and two chapters do
 not work there yet — 14 (netCDF resolves paths its own way on
@@ -121,7 +121,7 @@ Every example is a **complete program**, and each lands one idea:
 | `C2Wrap.m9` | checked `+` raises Overflow, always; wraparound is a different operator, `+%`, visible and greppable |
 | `Temps.m9` | a DEFINITION is a checked contract: exceptions with payloads, complete RAISES lists |
 | `C3Use.m9` | the client's side: the handler that names the module's exception and binds its payload |
-| `C4Mem.m9` | memory made visible: pools own storage, slices view it, VAR says who writes, strings are slices of CHAR — with the docstring convention modelled |
+| `C4Mem.m9` | memory made visible: a frame owns storage unless a named pool does, slices view it, VAR says who writes, strings are slices of CHAR — with the docstring convention modelled |
 | `C5Csv.m9` | reading data with **declared** column kinds and a declared missing value — nothing inferred |
 | `C6Stats.m9` | mean, percentiles, regression and Welch's t-test with real p-values (gated digit-for-digit against scipy) |
 | `C6Nan.m9` | a NaN in a sample RAISES; skipping gaps is the caller's one visible line |

@@ -2,31 +2,40 @@
 
 Every language answers "who frees this?" somewhere.  C answers it in
 the programmer's head, garbage-collected languages answer it later
-and invisibly, and M9 answers it **in the signature**: storage is
-carved from a named POOL, a pool is freed as one act, and a
-procedure that keeps memory beyond its own frame takes the pool as a
-parameter.  What a procedure merely *answers* needs none: a string,
-a slice or a record it builds — `RETURN a + b`, a `VAR` parameter it
-sets, a buffer it grew — is placed in the caller's own frame on the
-way out (`Fmt.Fixed` and `Describe` below take no pool), and an
-object a `VAR` parameter hands in brings its own pool along, so a
-procedure that grows it takes none either.  Measured across this
-repository's whole library, the rule is: *the pool parameter appears
-exactly when the caller must say where storage lives* — a
-constructor that promises `PTR T IN pool`, a reader that fills a
-table the caller owns, a string a module holds on to.  A signature
-with a pool tells you the result lives on and who owns it; a
-signature without one is a promise that nothing was kept beyond what
-it answers.
+and invisibly, and M9 answers it **where the storage is asked for**:
+the first argument of `NEW` says who frees it.  Most of the time it
+says nothing, and that is the default.  `NEW (F64, 5)`, like `+` on
+two strings, allocates in the procedure's own FRAME — an arena the
+compiler creates on first use and frees at the exit, with nothing to
+declare and nothing to free.  What a procedure *answers* survives
+that exit: a string, a slice or a record it builds — `RETURN a + b`,
+a `VAR` parameter it sets, a buffer it grew — lands in the caller's
+frame, not in the one that is about to die (`Ramp`, `Describe` and
+`Fmt.Fixed` below take no pool), and an object a `VAR` parameter
+hands in brings its own storage along, so a procedure that grows it
+names none either.
+
+A named POOL is the exception, and it is written down so that it is
+noticed: an arena with a name, freed as one act, for the places
+where somebody has to say where storage lives.  `scratch : POOL` in
+a procedure is this frame saying it to a constructor that asks;
+`VAR pool : POOL` in a signature is the procedure asking its caller.
+Measured across this repository's whole library, the rule is: *the
+pool parameter appears exactly when the caller must say where
+storage lives* — a constructor that promises `PTR T IN pool`, a
+reader that fills a table the caller owns, a string a module holds
+on to.  A signature with a pool tells you the result lives on and
+who owns it; a signature without one is a promise that nothing was
+kept beyond what it answers.
 
 ```m9 C4Mem.m9
 MODULE C4Mem ;
 
-(* Chapter 4.  Memory, made visible: pools own storage, slices view
-   it, VAR says who may change what, and strings are slices of CHAR.
-   Every allocation in this program can be pointed at and answered
-   for -- there is no garbage collector deciding later, and no free()
-   to forget.
+(* Chapter 4.  Memory, made visible: a frame owns storage unless a
+   named pool does, slices view it, VAR says who may change what, and
+   strings are slices of CHAR.  Every allocation in this program can
+   be pointed at and answered for -- there is no garbage collector
+   deciding later, and no free() to forget.
 
    The comments under the procedure headers are DOCSTRINGS: `m9c
    --doc` renders them -- with their `name -- description` parameter
@@ -45,9 +54,9 @@ PROCEDURE Spread (RO xs: SLICE OF F64) : F64 =
              this procedure may read it and provably does not write
              it -- the caller lends, nothing more.
 
-     No POOL parameter: the docs/pools.md rule is that the pool
-     appears exactly when an allocation OUTLIVES the call, and
-     nothing here allocates at all.                                 *)
+     No POOL parameter and no NEW: the docs/pools.md rule is that
+     the pool parameter appears exactly when the caller must say
+     where storage lives, and nothing here allocates at all.        *)
 VAR
   i : I64 ;
   lo, hi : F64 ;
@@ -61,11 +70,33 @@ BEGIN
   RETURN hi - lo
 END Spread ;
 
+PROCEDURE Ramp (n: I64 ; start: F64) : SLICE OF F64
+  RAISES ValueRange =
+  (* n values rising by one from start, answered as a new slice.
+
+       n     -- how many.
+       start -- the first of them.
+
+     NEW (F64, n) names no pool, which is the default: the storage
+     comes from a FRAME -- and because this procedure ANSWERS the
+     slice, from its caller's, so the slice is still there when this
+     frame is gone and nobody had to be asked where to put it.      *)
+VAR
+  xs : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  xs := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO xs [i] := start + F64 (i) END ;
+  RETURN xs
+END Ramp ;
+
 PROCEDURE Describe (RO label: STR ;
                     RO xs: SLICE OF F64) : STR
   RAISES ValueRange =
   (* one formatted line about a series, answered into the CALLER'S
-     frame: the buffer grows in a scratch pool of this frame, and a
+     frame.  The one NAMED pool of this program is here: DynStr.New
+     asks which pool its buffer lives in, so this frame declares a
+     scratch pool and says so.  The pool dies with the frame, and a
      string that RETURNs is moved out on the way back, so nothing
      here needs a pool in the signature.  RAISES ValueRange because
      Fmt.Fixed can -- the accounting is chapter 2's, and it is why
@@ -108,7 +139,6 @@ BEGIN
 END Shift ;
 
 VAR
-  pool : POOL ;                  (* dies with the program *)
   a    : ARRAY 8 OF F64 ;
   more : SLICE OF F64 ;
   i    : I64 ;
@@ -122,9 +152,10 @@ BEGIN
   Io.WriteLine (Describe ('all', a)) ;
   Io.WriteLine (Describe ('mid', SLICE (a, 2, 4))) ;
 
-  (* a slice with no array behind it: NEW carves it from a pool *)
-  more := NEW (pool, F64, 5) ;
-  FOR i := 0 TO 4 DO more [i] := 100.0 + F64 (i) END ;
+  (* a slice with no array behind it: Ramp carves it with NEW and
+     names no pool, so it lives in THIS frame -- the program's --
+     and is freed with it *)
+  more := Ramp (5, 100.0) ;
   Shift (more, 0.25) ;
   Io.WriteLine (Describe ('shifted', more)) ;
 
@@ -153,18 +184,27 @@ pools: carve, use, free as one
 
 Walk the pieces:
 
-- **`VAR pool : POOL`** declares an arena.  As a program-level
-  variable it dies with the program; as a procedure local
-  (`scratch : POOL`) it dies with the frame, which is the honest
-  spelling of "temporary".  There is no per-object free — freeing
-  the pool frees every string, slice and record carved from it, in
-  one act that cannot miss one.
+- **`NEW (F64, n)` names no pool**, and that is the default: the
+  storage comes from a frame.  `Ramp` *answers* its slice, so the
+  slice is built in the caller's frame and is still there when
+  `Ramp`'s own is gone — the program shifts it and reads it three
+  lines later.  Nothing was copied on the way, and nobody was asked
+  where to put it.
+- **`scratch : POOL` is the exception, by name.**  A POOL is an
+  arena you declare: as a procedure local it dies with the frame, as
+  a program-level variable with the program, and there is no
+  per-object free — freeing the pool frees every string, slice and
+  record carved from it, in one act that cannot miss one.
+  `Describe` declares one because `DynStr.New (scratch)` asks which
+  pool its buffer lives in; `NEW (pool, T, n)`, pool first, is the
+  same answer given at an allocation of your own.  When you read a
+  pool in a program, somebody had to decide a lifetime there.
 - **`SLICE OF F64`** is a view: a pointer and a length, no copy.
   An `ARRAY` lends itself as a slice at a call site, `SLICE (a, 2,
-  4)` takes a checked sub-view of it, and `NEW (pool, F64, 5)`
-  carves a slice with no array behind it.  Every access through any
-  of them is bounds-checked against the slice's own length —
-  chapter 1's founding rule, applied to views.
+  4)` takes a checked sub-view of it, and `NEW (F64, n)` carves a
+  slice with no array behind it.  Every access through any of them
+  is bounds-checked against the slice's own length — chapter 1's
+  founding rule, applied to views.
 - **`RO` and `VAR` are the lending terms.**  `RO xs` says *read
   only, provably*; `VAR xs` says *this procedure writes through the
   slice*, visible at both ends.  `Shift (more, 0.25)` announces the
@@ -242,21 +282,31 @@ END X4Escape.
 The type `PTR Point IN scratch` names the pool the pointer lives
 in, so "does this outlive its arena?" is a question the checker can
 answer — and does, at compile time, with the frame and the pool in
-the message.  The fix is the signature saying where the storage
-should live instead: give `Make` a `VAR pool : POOL` parameter,
-declare `p : PTR Point IN pool` and answer `PTR Point IN pool`, and
-the same program compiles and runs — the caller now owns the point,
-the way `Csv.Open` in the next chapter hands back a table in the
-pool it was given.  (Try it in the cell: it is a three-line edit.
-Note the allocation spelling while you are there: `NEW (pool,
-Point)`, pool first, like every NEW.  The other fix is no pool at
-all: `p := NEW (Point)` allocates in the frame, and a pointer a
-function ANSWERS is built in its caller's frame — the shape
-`Describe` uses for its string.)
+the message.  There are two fixes, and choosing between them is
+this chapter's question again.
 
-Ownership goes further than this chapter needs — `SHARED` counted
-handles and `OWN` moves appear with the zarr store in chapter 8 —
-but the rule of thumb carries the whole way: **the signature says
-who owns what, and the checker holds everyone to it.**
+If `Make` simply answers a point, name no pool at all: delete the
+`scratch` line, declare `p : PTR Point` and allocate with `p := NEW
+(Point)`.  All three, because a `p` still declared `IN scratch`
+cannot hold a frame allocation, and the checker says that as well.
+The point is then built in the caller's frame, the way `Ramp`
+answers its slice.
+
+If the caller should decide where the point lives, let the
+signature ask: give `Make` a `VAR pool : POOL` parameter, declare
+`p : PTR Point IN pool`, allocate with `NEW (pool, Point)` — pool
+first, like every NEW that names one — and answer `PTR Point IN
+pool`.  The program then declares a pool of its own and passes it,
+`q := Make (pool)`, and owns the point: the way `Csv.Open` in the
+next chapter hands back a table in the pool it was given.  (Try
+both in the cell.)
+
+Ownership goes further than this chapter needs — the third thing
+NEW's first argument can say, `NEW (OWN, T)` for storage one binding
+owns, and the `SHARED` counted handles and `OWN` moves that appear
+with the zarr store in chapter 8 — but the rule of thumb carries
+the whole way: **the program says who owns what, where it asks for
+the storage and in the signature, and the checker holds everyone to
+it.**
 
 [← Previous: definition and implementation](03-definition-implementation.md) · [Next: reading and writing data →](05-reading-data.md)
