@@ -47,7 +47,7 @@ BEGIN
   Plot.ClearFigure () ;
   Plot.AddLine (xs, ys, 0, 'signal') ;
   Plot.AddLine (xs, es, 1, 'envelope') ;
-  svg := Plot.Render (pool, 'damped oscillation', 'time (s)', 'amplitude') ;
+  svg := Plot.Render ('damped oscillation', 'time (s)', 'amplitude') ;
   Io.WriteFile ('/tmp/damped.svg', svg) ;
   Io.Write ('wrote /tmp/damped.svg, ') ;
   Io.WriteI64 (LEN (svg)) ;
@@ -70,7 +70,7 @@ wrote /tmp/damped.svg, 7847 bytes
 
 The API is the smallest one that earns its keep: `ClearFigure`,
 `AddLine (xs, ys, colorIndex, label)` up to four labelled series,
-`Render (pool, title, xlabel, ylabel)` — axes scaled and ticked
+`Render (title, xlabel, ylabel)` — axes scaled and ticked
 with the same "nice step" rule everywhere, NaN points simply
 breaking the line (a gap in the data is a gap in the plot, per
 chapter 5).  `RenderHeat` does the same for a matrix.  The result

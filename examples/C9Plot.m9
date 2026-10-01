@@ -35,7 +35,7 @@ BEGIN
   Plot.ClearFigure () ;
   Plot.AddLine (xs, ys, 0, 'signal') ;
   Plot.AddLine (xs, es, 1, 'envelope') ;
-  svg := Plot.Render (pool, 'damped oscillation', 'time (s)', 'amplitude') ;
+  svg := Plot.Render ('damped oscillation', 'time (s)', 'amplitude') ;
   Io.WriteFile ('/tmp/damped.svg', svg) ;
   Io.Write ('wrote /tmp/damped.svg, ') ;
   Io.WriteI64 (LEN (svg)) ;

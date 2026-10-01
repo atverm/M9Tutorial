@@ -5,16 +5,19 @@ the programmer's head, garbage-collected languages answer it later
 and invisibly, and M9 answers it **in the signature**: storage is
 carved from a named POOL, a pool is freed as one act, and a
 procedure that keeps memory beyond its own frame takes the pool as a
-parameter.  Measured across this repository's whole library, the
-rule holds with no exceptions worth naming: *the pool parameter
-appears exactly when the allocation outlives the call.*  A signature
+parameter.  What a procedure merely *answers* needs none: a string,
+a slice or a record it builds — `RETURN a + b`, a `VAR` parameter it
+sets, a buffer it grew — is placed in the caller's own frame on the
+way out (`Fmt.Fixed` and `Describe` below take no pool), and an
+object a `VAR` parameter hands in brings its own pool along, so a
+procedure that grows it takes none either.  Measured across this
+repository's whole library, the rule is: *the pool parameter appears
+exactly when the caller must say where storage lives* — a
+constructor that promises `PTR T IN pool`, a reader that fills a
+table the caller owns, a string a module holds on to.  A signature
 with a pool tells you the result lives on and who owns it; a
-signature without one is a promise that nothing was kept.  Strings
-are the one case the compiler handles for you: a string a procedure
-*answers* — `RETURN a + b`, or a `VAR` parameter it sets — is placed
-in the caller's own frame with no pool in sight (`Fmt.Fixed` below
-takes none), and the pool parameter is for what is kept beyond that:
-a table, a record, a string a module holds on to.
+signature without one is a promise that nothing was kept beyond what
+it answers.
 
 ```m9 C4Mem.m9
 MODULE C4Mem ;
@@ -58,36 +61,34 @@ BEGIN
   RETURN hi - lo
 END Spread ;
 
-PROCEDURE Describe (VAR pool: POOL ; RO label: STR ;
+PROCEDURE Describe (RO label: STR ;
                     RO xs: SLICE OF F64) : STR
   RAISES ValueRange =
-  (* one formatted line about a series, built in the CALLER'S pool.
-     RAISES ValueRange because Fmt.Fixed can -- the accounting is
-     chapter 2's, and it is why this line is in the signature and
-     not in a changelog.
+  (* one formatted line about a series, answered into the CALLER'S
+     frame: the buffer grows in a scratch pool of this frame, and a
+     string that RETURNs is moved out on the way back, so nothing
+     here needs a pool in the signature.  RAISES ValueRange because
+     Fmt.Fixed can -- the accounting is chapter 2's, and it is why
+     this line is in the signature and not in a changelog.
 
-       pool  -- where the answer lives.  The pool parameter IS the
-                ownership contract: the result outlives this call,
-                so the caller says which arena holds it and thereby
-                who frees it (freeing the pool frees every string
-                built here, in one act).
        label -- prefixed verbatim.
        xs    -- the series; only read.                              *)
 VAR
-  d : PTR DynStr.DString IN pool ;
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
   i : I64 ;
   sum : F64 ;
 BEGIN
   sum := 0.0 ;
   FOR i := 0 TO LEN (xs) - 1 DO sum := sum + xs [i] END ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, label) ;
-  DynStr.Append (pool, d, ': n=') ;
-  DynStr.AppendI64 (pool, d, LEN (xs)) ;
-  DynStr.Append (pool, d, ' mean=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (sum / F64 (LEN (xs)), 2)) ;
-  DynStr.Append (pool, d, ' spread=') ;
-  DynStr.Append (pool, d, Fmt.Fixed (Spread (xs), 2)) ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, label) ;
+  DynStr.Append (d, ': n=') ;
+  DynStr.AppendI64 (d, LEN (xs)) ;
+  DynStr.Append (d, ' mean=') ;
+  DynStr.Append (d, Fmt.Fixed (sum / F64 (LEN (xs)), 2)) ;
+  DynStr.Append (d, ' spread=') ;
+  DynStr.Append (d, Fmt.Fixed (Spread (xs), 2)) ;
   RETURN DynStr.View (d)
 END Describe ;
 
@@ -118,14 +119,14 @@ BEGIN
 
   (* an ARRAY lends itself as a slice at a call site; SLICE takes a
      checked sub-view -- same storage, no copy, bounds proven *)
-  Io.WriteLine (Describe (pool, 'all', a)) ;
-  Io.WriteLine (Describe (pool, 'mid', SLICE (a, 2, 4))) ;
+  Io.WriteLine (Describe ('all', a)) ;
+  Io.WriteLine (Describe ('mid', SLICE (a, 2, 4))) ;
 
   (* a slice with no array behind it: NEW carves it from a pool *)
   more := NEW (pool, F64, 5) ;
   FOR i := 0 TO 4 DO more [i] := 100.0 + F64 (i) END ;
   Shift (more, 0.25) ;
-  Io.WriteLine (Describe (pool, 'shifted', more)) ;
+  Io.WriteLine (Describe ('shifted', more)) ;
 
   (* strings are SLICE OF CHAR; `+` composes into the frame's own
      arena, which the compiler creates on the first `+` and frees at
@@ -180,10 +181,11 @@ Walk the pieces:
   is why `Fmt.Fixed` takes no pool.  `s := s + x` in a loop is
   linear: the arena extends its latest allocation in place.  That
   holds while nothing else is carved between the appends; where it
-  cannot be relied on, or where the string must OUTLIVE the frame,
-  `DynStr` grows a buffer in a pool you name (`Describe` above), and
-  a string that must outlive everything is declared where it is
-  needed.  The report's rule, par 2.3: `+` composes, `DynStr`
+  cannot be relied on, `DynStr` grows a buffer in a pool you name —
+  `Describe` above names a `scratch` pool of its own and RETURNs the
+  view, which is moved into the caller's frame on the way out like
+  any other answer — and a string that must outlive everything is
+  declared where it is needed.  The report's rule, par 2.3: `+` composes, `DynStr`
   accumulates.
 - **The docstrings are load-bearing.**  The comment under each
   procedure header, with its `name -- description` parameter lines,
@@ -242,11 +244,15 @@ in, so "does this outlive its arena?" is a question the checker can
 answer — and does, at compile time, with the frame and the pool in
 the message.  The fix is the signature saying where the storage
 should live instead: give `Make` a `VAR pool : POOL` parameter,
-declare `p : PTR Point IN pool`, and the same program compiles and
-runs — the caller now owns the point, exactly as in `Describe`
-above.  (Try it in the cell: it is a three-line edit.  Note the
-allocation spelling while you are there: `NEW (pool, Point)`, pool
-first, like every NEW.)
+declare `p : PTR Point IN pool` and answer `PTR Point IN pool`, and
+the same program compiles and runs — the caller now owns the point,
+the way `Csv.Open` in the next chapter hands back a table in the
+pool it was given.  (Try it in the cell: it is a three-line edit.
+Note the allocation spelling while you are there: `NEW (pool,
+Point)`, pool first, like every NEW.  The other fix is no pool at
+all: `p := NEW (Point)` allocates in the frame, and a pointer a
+function ANSWERS is built in its caller's frame — the shape
+`Describe` uses for its string.)
 
 Ownership goes further than this chapter needs — `SHARED` counted
 handles and `OWN` moves appear with the zarr store in chapter 8 —

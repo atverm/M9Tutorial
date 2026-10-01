@@ -48,7 +48,7 @@ CONST
 
 (* the values that are actually there: NaN is the missing value, and
    a mean over a column with gaps is a mean over what is present *)
-PROCEDURE Present (VAR pool: POOL ; RO v: SLICE OF F32) : SLICE OF F64
+PROCEDURE Present (RO v: SLICE OF F32) : SLICE OF F64
   RAISES ValueRange =
 VAR
   out : SLICE OF F64 ;
@@ -58,7 +58,7 @@ BEGIN
   FOR i := 0 TO LEN (v) - 1 DO
     IF NOT Math.IsNaNF32 (v[i]) THEN n := n + 1 END
   END ;
-  out := NEW (pool, F64, n) ;
+  out := NEW (F64, n) ;
   n := 0 ;
   FOR i := 0 TO LEN (v) - 1 DO
     IF NOT Math.IsNaNF32 (v[i]) THEN
@@ -85,11 +85,11 @@ BEGIN
   RETURN TRUE
 END Same ;
 
-PROCEDURE Stamp (VAR pool: POOL ; sec: I64) : STR RAISES ValueRange =
+PROCEDURE Stamp (sec: I64) : STR RAISES ValueRange =
 VAR t : Time.Instant ;
 BEGIN
   t.t := F64 (sec) ;
-  RETURN Time.Iso (pool, t, 0)
+  RETURN Time.Iso (t, 0)
 END Stamp ;
 
 VAR
@@ -157,8 +157,8 @@ BEGIN
     (* ---- 2. a frame, then a time series on the half-hour grid ---- *)
     fr := Frame.FromCsv (pool, t) ;
     stamps := Frame.ColI64 (fr, 'TIMESTAMP_START') ;
-    Io.WriteLine ('from ' + Stamp (pool, stamps[0]) + ' to '
-                  + Stamp (pool, stamps[LEN (stamps) - 1]) + ' UTC') ;
+    Io.WriteLine ('from ' + Stamp (stamps[0]) + ' to '
+                  + Stamp (stamps[LEN (stamps) - 1]) + ' UTC') ;
 
     (* what a CF reader will find beside each variable *)
     Frame.SetMeta (pool, fr, 'NEE_VUT_REF',
@@ -175,8 +175,8 @@ BEGIN
     (* ---- 3. what is in the two columns ---- *)
     nee := Frame.ColF32 (fr, 'NEE_VUT_REF') ;
     ta := Frame.ColF32 (fr, 'TA_F') ;
-    neeOk := Present (pool, nee) ;
-    taOk := Present (pool, ta) ;
+    neeOk := Present (nee) ;
+    taOk := Present (ta) ;
     Io.WriteLine ('NEE_VUT_REF: ' + Fmt.I64Str (LEN (neeOk)) + ' of '
                   + Fmt.I64Str (LEN (nee)) + ' present, mean '
                   + Fmt.Fixed (Stats.Mean (neeOk), 3) + ' umol m-2 s-1') ;

@@ -75,9 +75,10 @@ END Lower ;
 (* the passage as one lowercase word per line -- the input a
    sort | uniq pipeline wants.  Anything that is not a letter is a
    word break. *)
-PROCEDURE WordsOf (VAR pool: POOL ; RO text: STR) : STR
+PROCEDURE WordsOf (RO text: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   i : I64 ;
   inWord : BOOL ;
@@ -86,14 +87,14 @@ BEGIN
   inWord := FALSE ;
   FOR i := 0 TO LEN (text) - 1 DO
     IF IsLetter (text[i]) THEN
-      DynStr.AppendChar (pool, d, Lower (text[i])) ;
+      DynStr.AppendChar (d, Lower (text[i])) ;
       inWord := TRUE
     ELSIF inWord THEN
-      DynStr.AppendChar (pool, d, 0AC) ;   (* end this word *)
+      DynStr.AppendChar (d, 0AC) ;   (* end this word *)
       inWord := FALSE
     END
   END ;
-  IF inWord THEN DynStr.AppendChar (pool, d, 0AC) END ;
+  IF inWord THEN DynStr.AppendChar (d, 0AC) END ;
   RETURN DynStr.View (d)
 END WordsOf ;
 
@@ -117,12 +118,12 @@ END ParseInt ;
    name here.  A number the parser rejects is reported before the
    default is used, so a mistyped option is never mistaken for a
    deliberate omission. *)
-PROCEDURE TopWanted (VAR pool: POOL) : I64 RAISES ValueRange, IndexError =
+PROCEDURE TopWanted () : I64 RAISES ValueRange, IndexError =
 VAR
   s : STR ;
   n : I64 ;
 BEGIN
-  s := System.Value (pool, '--top', '') ;
+  s := System.Value ('--top', '') ;
   IF LEN (s) = 0 THEN RETURN DefaultTop END ;
   n := ParseInt (s) ;
   IF n >= 0 THEN RETURN n END ;
@@ -158,7 +159,7 @@ END Stage ;
    field of blanks.  Parsing a tool's REAL output -- padded columns
    and all -- is most of what living in the real world is.  Show the
    first `top` rows as a ranked table. *)
-PROCEDURE Report (VAR pool: POOL ; RO counts: STR ; top: I64)
+PROCEDURE Report (RO counts: STR ; top: I64)
   RAISES ValueRange, IndexError =
 VAR
   i, j, shown, count : I64 ;
@@ -198,11 +199,11 @@ VAR
 
 BEGIN
   BEGIN
-    top := TopWanted (pool) ;
+    top := TopWanted () ;
 
     (* the passage as one lowercase word per line, built in memory --
        the input the first stage reads on its stdin *)
-    words := WordsOf (pool, Passage ()) ;
+    words := WordsOf (Passage ()) ;
 
     none := NEW (pool, STR, 0) ;
     uniqArgs := NEW (pool, STR, 1) ;
@@ -220,7 +221,7 @@ BEGIN
     counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
     ranked := Stage (pool, 'sort', sortArgs, counted) ;
 
-    Report (pool, ranked, top)
+    Report (ranked, top)
   EXCEPT
   | Io.IOError (p) :
       Io.ErrLine ('could not start a pipeline stage:') ;

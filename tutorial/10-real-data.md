@@ -211,7 +211,7 @@ BEGIN
   Plot.SetDots (SLICE (hx, 0, valid), SLICE (hy, 0, valid)) ;
   Plot.AddLine (SLICE (mx, 0, nm), SLICE (my, 0, nm), 0, 'monthly mean') ;
   Plot.AddLine (fx, fy, 1, 'trend + 2 harmonics') ;
-  svg := Plot.Render (pool, 'CO2 at Hyltemossa, 150 m (ICOS, CC BY 4.0)',
+  svg := Plot.Render ('CO2 at Hyltemossa, 150 m (ICOS, CC BY 4.0)',
                       'year', 'CO2 (umol/mol)') ;
   Io.WriteFile ('/tmp/htm.svg', svg) ;
   Io.Write ('wrote /tmp/htm.svg, ') ;

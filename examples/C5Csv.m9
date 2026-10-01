@@ -51,9 +51,9 @@ BEGIN
   Io.WriteI64 (n) ;
   Io.WriteLine ('') ;
   Io.Write ('window ') ;
-  Io.Write (Time.Iso (pool, stamp [0], 0)) ;
+  Io.Write (Time.Iso (stamp [0], 0)) ;
   Io.Write (' .. ') ;
-  Io.WriteLine (Time.Iso (pool, stamp [LEN (stamp) - 1], 0)) ;
+  Io.WriteLine (Time.Iso (stamp [LEN (stamp) - 1], 0)) ;
   Io.Write ('mean TA ') ;
   Io.Write (Fmt.Fixed (Stats.Mean (SLICE (buf, 0, n)), 3)) ;
   Io.WriteLine (' degC')

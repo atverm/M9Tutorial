@@ -71,7 +71,7 @@ BEGIN
   ta := Frame.ColF64 (Frame.TsFrame (hr), 'TA') ;
   FOR i := 0 TO LEN (tm) - 1 DO
     stamp.t := F64 (tm [i]) ;
-    Io.Write (Time.Iso (pool, stamp, 0)) ;
+    Io.Write (Time.Iso (stamp, 0)) ;
     Io.Write ('  ') ;
     Io.WriteLine (Fmt.Fixed (ta [i], 3))
   END
