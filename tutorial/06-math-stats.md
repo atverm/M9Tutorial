@@ -69,7 +69,7 @@ EXCEPT
 | Faults.BadArg :
     Io.ErrLine ('bad argument') ; Io.Halt (1)
 | ValueRange :
-    Io.ErrLine ('a NaN reached the statistics') ; Io.Halt (1)
+    Io.ErrLine ('a sample that does not vary') ; Io.Halt (1)
 | Overflow :
     Io.ErrLine ('overflow') ; Io.Halt (1)
 END C6Stats.
@@ -106,50 +106,76 @@ every machine.
 ## The NaN policy, and why it is a policy
 
 Chapter 5 turned a declared gap into NaN.  What happens when a NaN
-reaches a statistic?
+reaches a statistic — and when a sample is nothing but gaps?
 
 ```m9 C6Nan.m9
 MODULE C6Nan ;
 
-(* Chapter 6.  A NaN in a sample RAISES -- the mean of [1, NaN, 3]
-   is not a number, and a library that answers one anyway (or
-   silently skips the gap) has decided your science for you.  The
-   skipping, when you mean it, is the caller's one visible line.    *)
+(* Chapter 6.  A NaN in a sample is a MISSING VALUE: the mean of
+   [1, NaN, 3] is 2, over the two values that are there -- and the
+   library says how many that was.  A skip nobody can see changes n
+   behind your back; a skip with its count beside it is a statement
+   about your data.  A sample of nothing but gaps is not answered
+   at all: it is refused, by that same count.                      *)
 
 IMPORT Io ;
 IMPORT Stats ;
 IMPORT Fmt ;
 
 VAR
-  xs : ARRAY 3 OF F64 ;
-  m  : F64 ;
+  xs, gaps : ARRAY 3 OF F64 ;
+  m : F64 ;
+  i : I64 ;
 
 BEGIN
   xs [0] := 1.0 ;
   xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
+  Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3) + ' over ' +
+                Fmt.I64Str (Stats.Count (xs)) + ' of ' +
+                Fmt.I64Str (LEN (xs)) + ' values') ;
+  FOR i := 0 TO 2 DO gaps [i] := 0.0 / 0.0 END ;
+  m := Stats.Mean (gaps) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
 EXCEPT
+| Stats.TooFew (got, need) :
+    Io.WriteLine ('nothing but gaps: ' + Fmt.I64Str (got) +
+                  ' values, and a mean needs ' + Fmt.I64Str (need))
 | ValueRange :
-    Io.WriteLine ('Stats.Mean refused the NaN (ValueRange)')
-| Stats.TooFew :
-    Io.WriteLine ('sample too small')
+    Io.WriteLine ('formatting failed')
 END C6Nan.
 ```
 
 ```output C6Nan
-Stats.Mean refused the NaN (ValueRange)
+mean = 2.000 over 2 of 3 values
+nothing but gaps: 0 values, and a mean needs 1
 ```
 
-It raises.  The alternatives are both answers someone regrets: a
-NaN mean (correct IEEE, useless science) or the silently "helpful"
-skip, which changes n without telling you and turns "a third of my
-sample is missing" into a confident narrow confidence interval.
-Skipping is often what you want — chapter 5's filter loop is
-exactly that — but it must be the CALLER's visible decision, with
-the count in the caller's hands.  A library that decides for you
-has decided your science.
+The gap is skipped, and counted out.  There are two answers a
+library can give here that someone regrets: a NaN mean (correct
+IEEE, useless science), and the silently "helpful" skip, which
+changes n without telling you and turns "a third of my sample is
+missing" into a confident narrow confidence interval.  `Stats` gives
+neither.  It takes every statistic over the values that are there —
+measured series have gaps, and a mean that refuses them is only ever
+called behind a filter someone wrote by hand — and it puts the count
+in your hands: `Stats.Count (xs)` beside a mean, `n` in the answer of
+a regression, a fit or a test, `Stats.RollingCount` beside a rolling
+mean.  For two samples taken together a *pair* counts when both its
+values are present.  And when nothing is left to count, the answer
+is not a NaN but a refusal by name, `TooFew`, carrying the number it
+found — the second line above.
+
+So the rule for your own code is one line long: **print n beside
+every statistic of measured data.**  The library will always tell
+you what it was.
+
+*(Until 0.14 a NaN in a sample raised `ValueRange`, and skipping was
+the caller's loop — chapter 5's filter is exactly that loop, and it
+still works.  The rule changed because the loop hid the very thing
+the refusal was meant to keep in view: what keeps it in view now is
+the count.)*
 
 One more time: a checked build runs within a few percent of the
 same code with every check stripped.  A language does not have to

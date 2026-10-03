@@ -124,7 +124,7 @@ Every example is a **complete program**, and each lands one idea:
 | `C4Mem.m9` | memory made visible: a frame owns storage unless a named pool does, slices view it, VAR says who writes, strings are slices of CHAR — with the docstring convention modelled |
 | `C5Csv.m9` | reading data with **declared** column kinds and a declared missing value — nothing inferred |
 | `C6Stats.m9` | mean, percentiles, regression and Welch's t-test with real p-values (gated digit-for-digit against scipy) |
-| `C6Nan.m9` | a NaN in a sample RAISES; skipping gaps is the caller's one visible line |
+| `C6Nan.m9` | a NaN in a sample is a missing value: skipped, and counted out -- the library reports n; nothing but gaps is refused |
 | `C7Series.m9` | timeseries with resolution and time convention as data; per-column averaging rules, epoch-aligned windows |
 | `C8Zarr.m9` | a zarr store over HTTP: checked shapes, NaN fills for deleted chunks, ownership that makes use-after-close uncompilable |
 | `C9Plot.m9` | figures as deterministic SVG strings — a plot you can `cmp` |

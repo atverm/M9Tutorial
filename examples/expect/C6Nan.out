@@ -1,1 +1,2 @@
-Stats.Mean refused the NaN (ValueRange)
+mean = 2.000 over 2 of 3 values
+nothing but gaps: 0 values, and a mean needs 1

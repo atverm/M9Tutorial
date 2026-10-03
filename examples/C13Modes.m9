@@ -80,10 +80,12 @@ END Nearest ;
    the string outlives the call.  Without KEPT on s the checker
    refuses the assignment: a borrowed argument may not reach module
    state undeclared (par 4.1).  With it, the caller can read off the
-   heading that what it passes will be held on to. --- *)
+   heading that what it passes will be held on to.  RO beside it
+   because the caller passes a literal, and a literal is lent only
+   to a parameter that promises not to write it (par 2.4). --- *)
 VAR lastLabel : STR ;
 
-PROCEDURE Remember (KEPT s: STR) =
+PROCEDURE Remember (RO KEPT s: STR) =
 BEGIN
   lastLabel := s
 END Remember ;

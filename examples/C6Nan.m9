@@ -1,27 +1,36 @@
 MODULE C6Nan ;
 
-(* Chapter 6.  A NaN in a sample RAISES -- the mean of [1, NaN, 3]
-   is not a number, and a library that answers one anyway (or
-   silently skips the gap) has decided your science for you.  The
-   skipping, when you mean it, is the caller's one visible line.    *)
+(* Chapter 6.  A NaN in a sample is a MISSING VALUE: the mean of
+   [1, NaN, 3] is 2, over the two values that are there -- and the
+   library says how many that was.  A skip nobody can see changes n
+   behind your back; a skip with its count beside it is a statement
+   about your data.  A sample of nothing but gaps is not answered
+   at all: it is refused, by that same count.                      *)
 
 IMPORT Io ;
 IMPORT Stats ;
 IMPORT Fmt ;
 
 VAR
-  xs : ARRAY 3 OF F64 ;
-  m  : F64 ;
+  xs, gaps : ARRAY 3 OF F64 ;
+  m : F64 ;
+  i : I64 ;
 
 BEGIN
   xs [0] := 1.0 ;
   xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
+  Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3) + ' over ' +
+                Fmt.I64Str (Stats.Count (xs)) + ' of ' +
+                Fmt.I64Str (LEN (xs)) + ' values') ;
+  FOR i := 0 TO 2 DO gaps [i] := 0.0 / 0.0 END ;
+  m := Stats.Mean (gaps) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
 EXCEPT
+| Stats.TooFew (got, need) :
+    Io.WriteLine ('nothing but gaps: ' + Fmt.I64Str (got) +
+                  ' values, and a mean needs ' + Fmt.I64Str (need))
 | ValueRange :
-    Io.WriteLine ('Stats.Mean refused the NaN (ValueRange)')
-| Stats.TooFew :
-    Io.WriteLine ('sample too small')
+    Io.WriteLine ('formatting failed')
 END C6Nan.

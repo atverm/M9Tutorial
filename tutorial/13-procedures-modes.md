@@ -90,10 +90,12 @@ END Nearest ;
    the string outlives the call.  Without KEPT on s the checker
    refuses the assignment: a borrowed argument may not reach module
    state undeclared (par 4.1).  With it, the caller can read off the
-   heading that what it passes will be held on to. --- *)
+   heading that what it passes will be held on to.  RO beside it
+   because the caller passes a literal, and a literal is lent only
+   to a parameter that promises not to write it (par 2.4). --- *)
 VAR lastLabel : STR ;
 
-PROCEDURE Remember (KEPT s: STR) =
+PROCEDURE Remember (RO KEPT s: STR) =
 BEGIN
   lastLabel := s
 END Remember ;
@@ -182,7 +184,7 @@ unchanged — a record, a slice, a matrix.  (`RO` on a record is
 copied by the current generator — a known cost, not a semantic
 difference; the promise holds either way.)
 
-**KEPT** — `Remember (KEPT s: STR)`.  This body stores its argument
+**KEPT** — `Remember (RO KEPT s: STR)`.  This body stores its argument
 in a module variable, so the string is held beyond the call.  That
 is a retention, and par 4.1 requires it to be declared: without
 `KEPT` on `s` the checker refuses the assignment, naming the
@@ -190,7 +192,12 @@ parameter and the word that would fix it — the second refusal
 below.  With it, a caller reads off the heading that what it passes
 will be kept, which changes what it may pass (a slice into a pool
 that dies at the next line would be a mistake, and now a visible
-one).
+one).  `KEPT` composes with a mode, and here the mode is `RO`: the
+program passes a string literal, and read-only storage — a literal,
+a `CONST`, what an `RO` parameter views — is lent only to an `RO`
+parameter.  A plain `s: STR` could be written through
+(`s[0] := 'X'`), and the checker refuses the call rather than trust
+that the body does not.
 
 **OWN**, not used here, moves ownership of an owned pointer INTO the
 procedure; the caller's name is dead afterwards.  Chapter 4 and
@@ -203,7 +210,16 @@ and the checker refuses the procedure: there is a path that reaches
 `END` without answering, and in Pascal or C that path would deliver
 whatever happened to be in the result register — a garbage number
 that looks as real as any other and travels straight into your
-results.  M9 will not compile a function that can fall off its end.
+results.  M9 will not compile a function that can fall off its end;
+`X13Fall` below is exactly that edit, with the checker's answer.
+
+The rule is one you can apply by eye, because the checker applies it
+the same way: an `IF` without an `ELSE` can be passed, a `WHILE` or
+a `FOR` can be passed, a `LOOP` only through its own `EXIT`, and a
+`CASE` or a handler when one of its arms does not answer.  A call
+never counts as an ending, whatever the procedure it calls does — so
+a function whose last act is to fail writes `RAISE`, not a helper
+that raises for it.
 
 ## "Maybe" is a type, not a null pointer
 
@@ -308,6 +324,42 @@ written down and no way to index past the end, because the index *is*
 the type.
 
 ## What the checker refuses
+
+A function that can reach its `END` without answering — `Sign` with
+its `ELSE` removed:
+
+```m9 X13Fall.m9
+MODULE X13Fall ;
+
+(* EXPECT-ERROR: a function must RETURN or RAISE on every path *)
+(* Chapter 13, a program that must NOT compile.  Sign from C13Modes
+   with its ELSE removed: there is now a path -- v = 0.0 -- that
+   reaches END with nothing to answer.  In Pascal or C that path
+   delivers whatever was in the result register; here the checker
+   names the function before it can.  The rule is structural, so a
+   reader can apply it by eye: an IF without ELSE can be passed, and
+   so can a WHILE or a FOR; a call never counts as an ending.       *)
+
+IMPORT Io ;
+
+PROCEDURE Sign (v: F64) : I64 =
+BEGIN
+  IF v > 0.0 THEN
+    RETURN 1
+  ELSIF v < 0.0 THEN
+    RETURN -1
+  END                        (* refused: v = 0.0 answers nothing *)
+END Sign ;
+
+BEGIN
+  Io.WriteI64 (Sign (0.0)) ;
+  Io.WriteLine ('')
+END X13Fall.
+```
+
+```refusal X13Fall
+14:1 X13Fall.Sign: a function must RETURN or RAISE on every path: Sign can reach its END (par 3)
+```
 
 The shared-borrow rule, on a pointer passed by value:
 

@@ -1,0 +1,26 @@
+MODULE X13Fall ;
+
+(* EXPECT-ERROR: a function must RETURN or RAISE on every path *)
+(* Chapter 13, a program that must NOT compile.  Sign from C13Modes
+   with its ELSE removed: there is now a path -- v = 0.0 -- that
+   reaches END with nothing to answer.  In Pascal or C that path
+   delivers whatever was in the result register; here the checker
+   names the function before it can.  The rule is structural, so a
+   reader can apply it by eye: an IF without ELSE can be passed, and
+   so can a WHILE or a FOR; a call never counts as an ending.       *)
+
+IMPORT Io ;
+
+PROCEDURE Sign (v: F64) : I64 =
+BEGIN
+  IF v > 0.0 THEN
+    RETURN 1
+  ELSIF v < 0.0 THEN
+    RETURN -1
+  END                        (* refused: v = 0.0 answers nothing *)
+END Sign ;
+
+BEGIN
+  Io.WriteI64 (Sign (0.0)) ;
+  Io.WriteLine ('')
+END X13Fall.

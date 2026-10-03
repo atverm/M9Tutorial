@@ -59,7 +59,7 @@ EXCEPT
 | Faults.BadArg :
     Io.ErrLine ('bad argument') ; Io.Halt (1)
 | ValueRange :
-    Io.ErrLine ('a NaN reached the statistics') ; Io.Halt (1)
+    Io.ErrLine ('a sample that does not vary') ; Io.Halt (1)
 | Overflow :
     Io.ErrLine ('overflow') ; Io.Halt (1)
 END C6Stats.
