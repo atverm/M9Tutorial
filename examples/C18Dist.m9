@@ -1,0 +1,202 @@
+MODULE C18Dist ;
+
+(* Chapter 18: a confidence interval assumes something about the
+   residuals -- that they are normal -- and this program asks whether
+   they are.
+
+   The regression is chapter 15's kind, NEE on incoming light.  Its
+   95% interval for the slope comes from Student's t.  Then the
+   residuals are binned into eight bins that a normal distribution
+   fills EQUALLY -- the bin edges are the normal's own quantiles -- and
+   Pearson's chi-square says how far the counts are from equal.  The
+   tails are compared with the normal's too.
+
+   A test is only worth its p-value if it is right when nothing is
+   wrong, so the last part feeds it a thousand samples that ARE
+   normal, drawn from a seeded stream, and counts how often it cries
+   wolf at the 5% level.                                             *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Csv ;
+IMPORT Stats ;
+
+CONST
+  Default = 'data/fluxnet_week.csv' ;
+  Bins = 8 ;                   (* of equal probability under the normal *)
+  Fitted = 2 ;                 (* parameters estimated from the sample:
+                                  the mean and the standard deviation *)
+  Trials = 1000 ;
+  SeedValue = 20261003 ;       (* a fixed seed: the draws are reproducible *)
+
+(* the column of that name, declared a 64-bit real before the parse *)
+PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
+VAR c : I64 ;
+BEGIN
+  c := Csv.Find (t, name) ;
+  IF c >= 0 THEN
+    Csv.SetReal64 (t, c)
+  ELSE
+    Io.ErrLine ('the file has no column ' + name) ;
+    Io.Halt (1)
+  END ;
+  RETURN c
+END Real ;
+
+(* how many of the values fall in each bin: bin k holds the values
+   with exactly k of the (ascending) edges at or below them *)
+PROCEDURE Counts (RO z, edges: SLICE OF F64 ; VAR count: SLICE OF I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  FOR k := 0 TO LEN (count) - 1 DO count[k] := 0 END ;
+  FOR i := 0 TO LEN (z) - 1 DO
+    k := 0 ;
+    FOR j := 0 TO LEN (edges) - 1 DO
+      IF z[i] >= edges[j] THEN k := j + 1 END
+    END ;
+    count[k] := count[k] + 1
+  END
+END Counts ;
+
+(* the sample standardised by its own normal fit, binned, and
+   Pearson's chi-square of the counts against equal expectations,
+   with its p-value *)
+PROCEDURE Test (RO xs, edges: SLICE OF F64 ; VAR z: SLICE OF F64 ;
+                VAR count: SLICE OF I64 ; VAR x2, p: F64)
+  RAISES Stats.TooFew, Faults.BadArg, ValueRange, Overflow =
+VAR
+  fit : Stats.Fit ;
+  i, k : I64 ;
+  e : F64 ;
+BEGIN
+  fit := Stats.NormFit (xs) ;
+  FOR i := 0 TO LEN (xs) - 1 DO z[i] := (xs[i] - fit.mu) / fit.sigma END ;
+  Counts (z, edges, count) ;
+  e := F64 (LEN (xs)) / F64 (LEN (count)) ;
+  x2 := 0.0 ;
+  FOR k := 0 TO LEN (count) - 1 DO
+    x2 := x2 + (F64 (count[k]) - e) * (F64 (count[k]) - e) / e
+  END ;
+  p := 1.0 - Stats.Chi2Cdf (x2, F64 (LEN (count) - 1 - Fitted))
+END Test ;
+
+(* n marks, a bar of the text histogram *)
+PROCEDURE Bar (n: I64) : STR =
+VAR
+  s : STR ;
+  i : I64 ;
+BEGIN
+  s := '' ;
+  FOR i := 1 TO n DO s := s + '#' END ;
+  RETURN s
+END Bar ;
+
+VAR
+  pool : POOL ;
+  path, msg, lo, hi : STR ;
+  t : PTR Csv.Table IN pool ;
+  cSw, cNee, n, i, k, trial, cries, loose : I64 ;
+  sw, nee, res, z, edges, draw : SLICE OF F64 ;
+  count : SLICE OF I64 ;
+  reg : Stats.Reg ;
+  st : Stats.Stream ;
+  tq, x2, p : F64 ;
+
+BEGIN
+  path := Default ;
+  IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
+  t := Csv.Open (pool, path, Csv.Defaults ()) ;
+  cSw := Real (t, 'SW_IN_F') ;
+  cNee := Real (t, 'NEE_VUT_REF') ;
+  Csv.Parse (pool, t) ;
+  sw := Csv.ColF64 (t, cSw) ;
+  nee := Csv.ColF64 (t, cNee) ;
+  n := LEN (nee) ;
+
+  (* ---- 1. the slope and its interval, which ASSUMES normal
+     residuals: the t distribution with n - 2 degrees of freedom ---- *)
+  reg := Stats.LinReg (sw, nee) ;
+  tq := Stats.TPpf (0.975, F64 (n - 2)) ;
+  Io.WriteLine ('NEE on light: slope ' + Fmt.Fixed (reg.slope, 4)
+                + ' umol m-2 s-1 per W m-2') ;
+  Io.WriteLine ('  95% interval ' + Fmt.Fixed (reg.slope - tq * reg.stderr, 4)
+                + ' .. ' + Fmt.Fixed (reg.slope + tq * reg.stderr, 4)
+                + '  (t quantile ' + Fmt.Fixed (tq, 4) + ', '
+                + Fmt.I64Str (n - 2) + ' degrees of freedom)') ;
+
+  (* ---- 2. the residuals against the normal, bin by bin ---- *)
+  res := NEW (pool, F64, n) ;
+  FOR i := 0 TO n - 1 DO
+    res[i] := nee[i] - (reg.intercept + reg.slope * sw[i])
+  END ;
+  edges := NEW (pool, F64, Bins - 1) ;
+  FOR k := 1 TO Bins - 1 DO
+    edges[k - 1] := Stats.NormalPpf (F64 (k) / F64 (Bins))
+  END ;
+  z := NEW (pool, F64, n) ;
+  count := NEW (pool, I64, Bins) ;
+  Test (res, edges, z, count, x2, p) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('the ' + Fmt.I64Str (n) + ' residuals, standardised, in '
+                + Fmt.I64Str (Bins) + ' bins a normal fills equally ('
+                + Fmt.I64Str (n DIV Bins) + ' each):') ;
+  FOR k := 0 TO Bins - 1 DO
+    IF k = 0 THEN lo := '  -inf' ELSE lo := Fmt.FixedPad (edges[k - 1], 6, 2) END ;
+    IF k = Bins - 1 THEN hi := '   inf' ELSE hi := Fmt.FixedPad (edges[k], 6, 2) END ;
+    Io.WriteLine (lo + ' ..' + hi + Fmt.I64Pad (count[k], 5, FALSE) + '  '
+                  + Bar (count[k] DIV 2))
+  END ;
+  Io.WriteLine ('chi-square ' + Fmt.Fixed (x2, 2) + ' with '
+                + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom, p = '
+                + Fmt.Sci (p, 1)) ;
+
+  (* ---- the tails, where a normal model's intervals live ---- *)
+  Io.WriteLine ('2.5th and 97.5th percentiles: '
+                + Fmt.Fixed (Stats.Percentile (z, 2.5), 3) + ' and '
+                + Fmt.Fixed (Stats.Percentile (z, 97.5), 3)
+                + '  (a normal: ' + Fmt.Fixed (Stats.NormalPpf (0.025), 3)
+                + ' and ' + Fmt.Fixed (Stats.NormalPpf (0.975), 3) + ')') ;
+
+  (* ---- 3. the same test on samples that ARE normal ---- *)
+  st := Stats.Seed (SeedValue) ;
+  draw := NEW (pool, F64, n) ;
+  cries := 0 ;
+  loose := 0 ;
+  FOR trial := 1 TO Trials DO
+    FOR i := 0 TO n - 1 DO draw[i] := Stats.Normal (st) END ;
+    Test (draw, edges, z, count, x2, p) ;
+    IF p < 0.05 THEN cries := cries + 1 END ;
+    (* the same statistic read as if nothing had been fitted *)
+    IF 1.0 - Stats.Chi2Cdf (x2, F64 (Bins - 1)) < 0.05 THEN loose := loose + 1 END
+  END ;
+  Io.WriteLine ('') ;
+  Io.WriteLine (Fmt.I64Str (Trials) + ' normal samples of ' + Fmt.I64Str (n)
+                + ', rejected at p < 0.05:') ;
+  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom '
+                + Fmt.I64Pad (cries, 4, FALSE) + ' times') ;
+  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1) + ' degrees of freedom '
+                + Fmt.I64Pad (loose, 4, FALSE) + ' times')
+EXCEPT
+| Csv.ParseError (what, line, col) :
+    msg := what ;              (* a handler's binder has no type yet; a
+                                  declared local gives it one *)
+    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
+                + ': ' + msg) ;
+    Io.Halt (1)
+| Csv.RangeError (row, col) :
+    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.Halt (1)
+| Stats.TooFew (got, need) :
+    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.Halt (1)
+| Faults.BadArg (what) :
+    msg := what ;
+    Io.ErrLine (msg) ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value out of range') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow') ; Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
+END C18Dist.

@@ -1,0 +1,15 @@
+NEE on light, temperature and VPD: 336 half-hours, 4 coefficients
+
+term           estimate   stderr        t       p
+intercept        9.1152   2.5055     3.64  3.2e-4  umol m-2 s-1
+SW_IN_F         -0.0343   0.0012   -28.21  3.6e-90  per W m-2
+TA_F            -0.4940   0.2102    -2.35  1.9e-2  per degC
+VPD_F            0.6786   0.1485     4.57  6.9e-6  per hPa
+residual standard deviation 4.737 umol m-2 s-1
+
+(X'X)^-1 X'y agrees with LstSq to 8 digits
+Solve (X'X, X'y) agrees with LstSq to 8 digits
+condition of X    3.6e3
+condition of X'X  1.3e7
+
+temperature twice: refused, column 4 (counting from 0) adds nothing to the columns before it

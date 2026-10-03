@@ -59,6 +59,7 @@ chapters do not run on Windows.
 15. [Statistics: a regression, a test, and what a p-value means](15-statistics.md)
 16. [Threads for computation, and what the cores actually give you](16-threads-compute.md)
 17. [Living in the real world: parameters, external programs, and pipelines](17-real-world.md)
+18. [Evaluating a model: a Taylor diagram, a regression as matrices, and its residuals](18-model-evaluation.md)
 
 ## Running the examples yourself
 

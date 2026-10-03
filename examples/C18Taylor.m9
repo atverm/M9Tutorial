@@ -1,0 +1,207 @@
+MODULE C18Taylor ;
+
+(* Chapter 18: how good is a model, in one picture.
+
+   A Taylor diagram places every comparison of a model with its
+   observations by two numbers: how much the model VARIES compared
+   with the observations (the ratio of the two standard deviations,
+   the distance from the origin) and how well it goes up and down
+   WITH them (the correlation, the angle).  The distance from the
+   point to REF, the observations themselves, is then the centred
+   root-mean-square difference -- the third number, for free.
+
+   The observations are chapter 14's week of half-hourly fluxes: net
+   ecosystem exchange (NEE), sensible heat (H) and latent heat (LE).
+   The "models" are four predictions anyone could make without a
+   model at all:
+     light        a straight line on incoming shortwave light,
+     temperature  a straight line on air temperature,
+     mean day     the week's average of each half-hour of the day,
+                  the same 48 values seven times,
+     yesterday    each half-hour as it was 24 hours before.
+   Each is held against the same observations, and the figure shows
+   which kind of knowledge each flux needs.                          *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Csv ;
+IMPORT Math ;
+IMPORT Stats ;
+IMPORT Plot ;
+
+CONST
+  Default = 'data/fluxnet_week.csv' ;
+  PerDay = 48 ;                (* half-hours in a day *)
+  Figure = '/tmp/taylor.svg' ;
+  Columns = ['NEE_VUT_REF', 'H_F_MDS', 'LE_F_MDS'] ;
+  Fluxes = ['NEE', 'H', 'LE'] ;
+  Models = ['light', 'temperature', 'mean day', 'yesterday'] ;
+                               (* the legend has room for about twelve
+                                  characters a name *)
+
+(* the column of that name, declared a 64-bit real before the parse;
+   a file without it stops the program, naming what was missing *)
+PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
+VAR c : I64 ;
+BEGIN
+  c := Csv.Find (t, name) ;
+  IF c >= 0 THEN
+    Csv.SetReal64 (t, c)
+  ELSE
+    Io.ErrLine ('the file has no column ' + name) ;
+    Io.Halt (1)
+  END ;
+  RETURN c
+END Real ;
+
+(* model 1 and 2: the least-squares line of y on the driver x, and
+   what it says at every x *)
+PROCEDURE Line (RO x, y: SLICE OF F64 ; VAR m: SLICE OF F64)
+  RAISES Stats.TooFew, ValueRange, Overflow =
+VAR
+  reg : Stats.Reg ;
+  i : I64 ;
+BEGIN
+  reg := Stats.LinReg (x, y) ;
+  FOR i := 0 TO LEN (y) - 1 DO
+    m[i] := reg.intercept + reg.slope * x[i]
+  END
+END Line ;
+
+(* model 3: every half-hour of the day averaged over the days, and
+   that average day repeated *)
+PROCEDURE MeanDay (RO y: SLICE OF F64 ; VAR m: SLICE OF F64)
+  RAISES ValueRange =
+VAR
+  days, k, d : I64 ;
+  s : F64 ;
+BEGIN
+  days := LEN (y) DIV PerDay ;
+  FOR k := 0 TO PerDay - 1 DO
+    s := 0.0 ;
+    FOR d := 0 TO days - 1 DO s := s + y[d * PerDay + k] END ;
+    FOR d := 0 TO days - 1 DO m[d * PerDay + k] := s / F64 (days) END
+  END
+END MeanDay ;
+
+(* model 4: the value 24 hours earlier.  The first day has no
+   yesterday, so it is MISSING -- a NaN -- and Stats.Taylor compares
+   the six days where both are present *)
+PROCEDURE Yesterday (RO y: SLICE OF F64 ; VAR m: SLICE OF F64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (y) - 1 DO
+    IF i < PerDay THEN
+      m[i] := 0.0 / 0.0
+    ELSE
+      m[i] := y[i - PerDay]
+    END
+  END
+END Yesterday ;
+
+(* s and blanks after it, to make a column of the table *)
+PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
+VAR
+  pad : STR ;
+  i : I64 ;
+BEGIN
+  pad := '' ;
+  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  RETURN s + pad
+END PadTo ;
+
+VAR
+  pool : POOL ;
+  path, svg, msg : STR ;
+  t : PTR Csv.Table IN pool ;
+  cSw, cTa, f, k : I64 ;
+  cols : SLICE OF I64 ;
+  sw, ta, y, m : SLICE OF F64 ;
+  ratio, corr : GRID 2 OF F64 ;
+  r, c, e, worst : F64 ;
+
+BEGIN
+  path := Default ;
+  IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
+
+  (* ---- the two drivers and the three fluxes, nothing else ---- *)
+  t := Csv.Open (pool, path, Csv.Defaults ()) ;
+  cSw := Real (t, 'SW_IN_F') ;
+  cTa := Real (t, 'TA_F') ;
+  cols := NEW (pool, I64, LEN (Columns)) ;
+  FOR f := 0 TO LEN (Columns) - 1 DO cols[f] := Real (t, Columns[f]) END ;
+  Csv.Parse (pool, t) ;
+  sw := Csv.ColF64 (t, cSw) ;
+  ta := Csv.ColF64 (t, cTa) ;
+  Io.WriteLine (Fmt.I64Str (LEN (sw)) + ' half-hours, '
+                + Fmt.I64Str (LEN (sw) DIV PerDay) + ' days') ;
+  Io.WriteLine ('') ;
+
+  (* ---- each flux against each model: one ROW a model, one
+     COLUMN a flux, as RenderTaylor takes them ---- *)
+  ratio := NEW (pool, F64, LEN (Models), LEN (Fluxes)) ;
+  corr := NEW (pool, F64, LEN (Models), LEN (Fluxes)) ;
+  m := NEW (pool, F64, LEN (sw)) ;
+  worst := 0.0 ;
+  Io.WriteLine ('flux  model          ratio   corr    rms') ;
+  FOR f := 0 TO LEN (Fluxes) - 1 DO
+    y := Csv.ColF64 (t, cols[f]) ;
+    FOR k := 0 TO LEN (Models) - 1 DO
+      CASE k OF
+      | 0 : Line (sw, y, m)
+      | 1 : Line (ta, y, m)
+      | 2 : MeanDay (y, m)
+      ELSE  Yesterday (y, m)
+      END ;
+      Stats.Taylor (m, y, r, c, e) ;
+      ratio[k, f] := r ;
+      corr[k, f] := c ;
+      Io.WriteLine (PadTo (Fluxes[f], 6) + PadTo (Models[k], 12)
+                    + Fmt.FixedPad (r, 7, 3) + Fmt.FixedPad (c, 7, 3)
+                    + Fmt.FixedPad (e, 7, 3)) ;
+      (* the geometry the figure rests on: rms is the distance to
+         REF, so it follows from the other two *)
+      worst := Math.Max (worst, Math.Fabs (e * e - (r * r + 1.0 - 2.0 * r * c)))
+    END
+  END ;
+  Io.WriteLine ('') ;
+  IF worst < 1.0E-12 THEN
+    Io.WriteLine ('rms * rms = ratio * ratio + 1 - 2 * ratio * corr, every row')
+  ELSE
+    Io.WriteLine ('the three numbers DISAGREE by ' + Fmt.Sci (worst, 2))
+  END ;
+
+  (* ---- the picture ---- *)
+  svg := Plot.RenderTaylor ('A week of fluxes against four guesses',
+                            ratio, corr, Models, Fluxes) ;
+  Io.WriteFile (Figure, svg) ;
+  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (LEN (svg)) + ' bytes')
+EXCEPT
+| Csv.ParseError (what, line, col) :
+    msg := what ;              (* a handler's binder has no type yet; a
+                                  declared local gives it one *)
+    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
+                + ': ' + msg) ;
+    Io.Halt (1)
+| Csv.RangeError (row, col) :
+    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.Halt (1)
+| Stats.TooFew (got, need) :
+    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.Halt (1)
+| Faults.BadArg (what) :
+    msg := what ;
+    Io.ErrLine ('a flux that does not vary: ' + msg) ;
+    Io.Halt (1)
+| Faults.SizeError (got, want) :
+    Io.ErrLine ('a model and its observations differ in length') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value out of range') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow') ; Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot read ' + path + ' or write ' + Figure) ;
+    Io.Halt (1)
+END C18Taylor.

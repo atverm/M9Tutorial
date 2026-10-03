@@ -1,0 +1,18 @@
+NEE on light: slope -0.0304 umol m-2 s-1 per W m-2
+  95% interval -0.0324 .. -0.0285  (t quantile 1.9671, 334 degrees of freedom)
+
+the 336 residuals, standardised, in 8 bins a normal fills equally (42 each):
+  -inf .. -1.15   47  #######################
+ -1.15 .. -0.67   48  ########################
+ -0.67 .. -0.32   29  ##############
+ -0.32 ..  0.00   28  ##############
+  0.00 ..  0.32   49  ########################
+  0.32 ..  0.67   78  #######################################
+  0.67 ..  1.15   14  #######
+  1.15 ..   inf   43  #####################
+chi-square 60.86 with 5 degrees of freedom, p = 8.1e-12
+2.5th and 97.5th percentiles: -1.793 and 2.278  (a normal: -1.960 and 1.960)
+
+1000 normal samples of 336, rejected at p < 0.05:
+  with 5 degrees of freedom   65 times
+  with 7 degrees of freedom   23 times

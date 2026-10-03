@@ -9,7 +9,7 @@ those programs said. A data pipeline is exactly this shape — one
 tool's output is the next tool's input — and most working software
 is a data pipeline wearing a coat.
 
-This last chapter builds a small one. It counts how often each word
+This chapter builds a small one. It counts how often each word
 appears in a passage, the way the classic shell line does —
 `sort | uniq -c | sort` — but from M9, and **without a shell**: each
 stage is its own program, run through `System.Exec`, fed the previous
@@ -443,4 +443,4 @@ seventeen chapters is that when they do, the program says so, at the
 line where it happened, instead of computing a confident wrong answer
 and printing it as if it were true.
 
-[← Previous: threads for computation, and what the cores actually give you](16-threads-compute.md)
+[← Previous: threads for computation, and what the cores actually give you](16-threads-compute.md) · [Next: evaluating a model →](18-model-evaluation.md)

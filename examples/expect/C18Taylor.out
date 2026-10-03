@@ -1,0 +1,18 @@
+336 half-hours, 7 days
+
+flux  model          ratio   corr    rms
+NEE   light         0.857  0.857  0.516
+NEE   temperature   0.438  0.438  0.899
+NEE   mean day      0.894  0.894  0.448
+NEE   yesterday     0.991  0.750  0.704
+H     light         0.941  0.941  0.338
+H     temperature   0.705  0.705  0.710
+H     mean day      0.808  0.808  0.589
+H     yesterday     0.932  0.765  0.665
+LE    light         0.902  0.902  0.432
+LE    temperature   0.598  0.598  0.802
+LE    mean day      0.888  0.888  0.460
+LE    yesterday     0.988  0.761  0.687
+
+rms * rms = ratio * ratio + 1 - 2 * ratio * corr, every row
+wrote /tmp/taylor.svg, 9595 bytes

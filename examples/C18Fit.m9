@@ -1,0 +1,213 @@
+MODULE C18Fit ;
+
+(* Chapter 18: a regression written as matrices -- net ecosystem
+   exchange on light, temperature and the air's dryness at once --
+   and the inverse a standard error needs.
+
+   The model is NEE = b0 + b1 SW + b2 TA + b3 VPD, one ROW of the
+   design matrix X a half-hour and one COLUMN a term:
+
+       X = [ 1  SW  TA  VPD ]          y = [ NEE ]
+
+   Mat.LstSq finds the b that makes X b - y smallest.  The
+   uncertainty of b needs the inverse of X'X: its diagonal, times the
+   variance of the residuals, is the variance of each coefficient.
+   The same inverse also gives b a second way, the textbook way --
+   b = (X'X)^-1 X'y, the "normal equations" -- and the program
+   compares the two, and says why LstSq does not take that road.
+
+   Last, a design with one column too many: temperature in degrees
+   Celsius AND in kelvin.  The two say the same thing, so no single
+   b fits best, and LstSq refuses by name instead of answering.     *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Csv ;
+IMPORT Math ;
+IMPORT Mat ;
+IMPORT Stats ;
+
+CONST
+  Default = 'data/fluxnet_week.csv' ;
+  Terms = ['intercept', 'SW_IN_F', 'TA_F', 'VPD_F'] ;
+  Units = ['umol m-2 s-1', 'per W m-2', 'per degC', 'per hPa'] ;
+
+(* the column of that name, declared a 64-bit real before the parse *)
+PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
+VAR c : I64 ;
+BEGIN
+  c := Csv.Find (t, name) ;
+  IF c >= 0 THEN
+    Csv.SetReal64 (t, c)
+  ELSE
+    Io.ErrLine ('the file has no column ' + name) ;
+    Io.Halt (1)
+  END ;
+  RETURN c
+END Real ;
+
+(* the largest difference between two column vectors, relative to
+   the larger of each pair *)
+PROCEDURE RelDiff (a, b: PTR Mat.Matrix) : F64 RAISES ValueRange =
+VAR
+  i : I64 ;
+  d, worst : F64 ;
+BEGIN
+  worst := 0.0 ;
+  FOR i := 0 TO Mat.Rows (a) - 1 DO
+    d := Math.Fabs (Mat.Get (a, i, 0) - Mat.Get (b, i, 0))
+         / Math.Max (Math.Fabs (Mat.Get (a, i, 0)), Math.Fabs (Mat.Get (b, i, 0))) ;
+    worst := Math.Max (worst, d)
+  END ;
+  RETURN worst
+END RelDiff ;
+
+(* s and blanks after it, to make a column of the table *)
+PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
+VAR
+  pad : STR ;
+  i : I64 ;
+BEGIN
+  pad := '' ;
+  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  RETURN s + pad
+END PadTo ;
+
+VAR
+  pool : POOL ;
+  path, msg : STR ;
+  t : PTR Csv.Table IN pool ;
+  cols : SLICE OF I64 ;
+  cNee, n, p, i, j : I64 ;
+  y : SLICE OF F64 ;
+  x, x5, xt, xtx, xtxInv, yv, b, b2, b3, fitted, u, vt : PTR Mat.Matrix IN pool ;
+  sv : SLICE OF F64 ;
+  rss, s2, se, tv, pv, cond : F64 ;
+
+BEGIN
+  path := Default ;
+  IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
+
+  (* ---- the three drivers and NEE ---- *)
+  t := Csv.Open (pool, path, Csv.Defaults ()) ;
+  cols := NEW (pool, I64, LEN (Terms)) ;
+  FOR j := 1 TO LEN (Terms) - 1 DO cols[j] := Real (t, Terms[j]) END ;
+  cNee := Real (t, 'NEE_VUT_REF') ;
+  Csv.Parse (pool, t) ;
+  y := Csv.ColF64 (t, cNee) ;
+  n := LEN (y) ;
+  p := LEN (Terms) ;
+
+  (* ---- the design matrix: a column of ones, then one column a
+     driver; and y as a matrix of one column ---- *)
+  x := Mat.New (pool, n, p) ;
+  yv := Mat.New (pool, n, 1) ;
+  FOR i := 0 TO n - 1 DO
+    Mat.Set (x, i, 0, 1.0) ;
+    Mat.Set (yv, i, 0, y[i])
+  END ;
+  FOR j := 1 TO p - 1 DO
+    y := Csv.ColF64 (t, cols[j]) ;
+    FOR i := 0 TO n - 1 DO Mat.Set (x, i, j, y[i]) END
+  END ;
+
+  (* ---- 1. the fit ---- *)
+  b := Mat.LstSq (pool, x, yv) ;
+  fitted := Mat.MulM (pool, x, b) ;
+  rss := 0.0 ;
+  FOR i := 0 TO n - 1 DO
+    rss := rss + (Mat.Get (yv, i, 0) - Mat.Get (fitted, i, 0))
+                 * (Mat.Get (yv, i, 0) - Mat.Get (fitted, i, 0))
+  END ;
+  s2 := rss / F64 (n - p) ;    (* the residual variance, n - p degrees
+                                  of freedom *)
+
+  (* ---- 2. the uncertainty: s2 times the diagonal of (X'X)^-1 ---- *)
+  xt := Mat.Transpose (pool, x) ;
+  xtx := Mat.MulM (pool, xt, x) ;
+  xtxInv := Mat.Inverse (pool, xtx) ;
+  Io.WriteLine ('NEE on light, temperature and VPD: '
+                + Fmt.I64Str (n) + ' half-hours, ' + Fmt.I64Str (p)
+                + ' coefficients') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('term           estimate   stderr        t       p') ;
+  FOR j := 0 TO p - 1 DO
+    se := Math.Sqrt (s2 * Mat.Get (xtxInv, j, j)) ;
+    tv := Mat.Get (b, j, 0) / se ;
+    pv := 2.0 * Stats.TTail (Math.Fabs (tv), F64 (n - p)) ;
+    Io.WriteLine (PadTo (Terms[j], 12) + Fmt.FixedPad (Mat.Get (b, j, 0), 11, 4)
+                  + Fmt.FixedPad (se, 9, 4) + Fmt.FixedPad (tv, 9, 2)
+                  + '  ' + Fmt.Sci (pv, 1) + '  ' + Units[j])
+  END ;
+  Io.WriteLine ('residual standard deviation '
+                + Fmt.Fixed (Math.Sqrt (s2), 3) + ' umol m-2 s-1') ;
+
+  (* ---- 3. the same b two other ways ---- *)
+  b2 := Mat.MulM (pool, xtxInv, Mat.MulM (pool, xt, yv)) ;
+  b3 := Mat.Solve (pool, xtx, Mat.MulM (pool, xt, yv)) ;
+  Io.WriteLine ('') ;
+  (* an apostrophe in a string: the string goes in double quotes, as
+     M9 strings have no escapes *)
+  IF RelDiff (b, b2) < 1.0E-8 THEN
+    Io.WriteLine ("(X'X)^-1 X'y agrees with LstSq to 8 digits")
+  ELSE
+    Io.WriteLine ("(X'X)^-1 X'y DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b2), 2))
+  END ;
+  IF RelDiff (b, b3) < 1.0E-8 THEN
+    Io.WriteLine ("Solve (X'X, X'y) agrees with LstSq to 8 digits")
+  ELSE
+    Io.WriteLine ("Solve (X'X, X'y) DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b3), 2))
+  END ;
+
+  (* ---- why LstSq does not take that road: the condition number,
+     how many digits a solution can lose, is SQUARED by forming X'X.
+     The singular values say it: their ratio is the condition. ---- *)
+  sv := NEW (pool, F64, p) ;
+  Mat.Svd (pool, x, u, sv, vt) ;
+  cond := sv[0] / sv[p - 1] ;
+  Io.WriteLine ('condition of X    ' + Fmt.Sci (cond, 1)) ;
+  Io.WriteLine ("condition of X'X  " + Fmt.Sci (cond * cond, 1)) ;
+
+  (* ---- 4. one column too many ---- *)
+  x5 := Mat.New (pool, n, p + 1) ;
+  FOR i := 0 TO n - 1 DO
+    FOR j := 0 TO p - 1 DO Mat.Set (x5, i, j, Mat.Get (x, i, j)) END ;
+    Mat.Set (x5, i, p, Mat.Get (x, i, 2) + 273.15)   (* TA in kelvin *)
+  END ;
+  Io.WriteLine ('') ;
+  BEGIN
+    b := Mat.LstSq (pool, x5, yv) ;
+    Io.WriteLine ('temperature twice: LstSq answered -- it should not have')
+  EXCEPT
+  | Mat.Singular (col) :
+      Io.WriteLine ('temperature twice: refused, column ' + Fmt.I64Str (col)
+                    + ' (counting from 0) adds nothing to the columns before it')
+  END
+EXCEPT
+| Csv.ParseError (what, line, col) :
+    msg := what ;              (* a handler's binder has no type yet; a
+                                  declared local gives it one *)
+    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
+                + ': ' + msg) ;
+    Io.Halt (1)
+| Csv.RangeError (row, col) :
+    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.Halt (1)
+| Mat.Singular (col) :
+    Io.ErrLine ('the design has no unique fit: column ' + Fmt.I64Str (col)) ;
+    Io.Halt (1)
+| Mat.NoConverge (sweeps) :
+    Io.ErrLine ('the singular values did not settle') ; Io.Halt (1)
+| Faults.SizeError (got, want) :
+    Io.ErrLine ('matrices of the wrong shape') ; Io.Halt (1)
+| Faults.BadArg (what) :
+    msg := what ;
+    Io.ErrLine (msg) ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('a value out of range') ; Io.Halt (1)
+| Overflow :
+    Io.ErrLine ('overflow') ; Io.Halt (1)
+| Io.IOError :
+    Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
+END C18Fit.
