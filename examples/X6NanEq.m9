@@ -1,0 +1,17 @@
+MODULE X6NanEq ;
+
+(* EXPECT-ERROR: no '=' with NaN *)
+(* Chapter 6, a program that must NOT compile.  The test everybody
+   writes first for a missing value: is x NaN?  Written with '=' it
+   is never TRUE -- a NaN is unequal to everything, itself included --
+   so the gap it was meant to catch goes straight through.  The
+   checker refuses the comparison and names the test that works.    *)
+
+IMPORT Io ;
+
+VAR x : F64 ;
+
+BEGIN
+  x := NaN ;
+  IF x = NaN THEN Io.WriteLine ('a gap') END
+END X6NanEq.

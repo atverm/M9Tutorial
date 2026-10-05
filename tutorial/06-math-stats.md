@@ -129,13 +129,13 @@ VAR
 
 BEGIN
   xs [0] := 1.0 ;
-  xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
+  xs [1] := NaN ;                   (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3) + ' over ' +
                 Fmt.I64Str (Stats.Count (xs)) + ' of ' +
                 Fmt.I64Str (LEN (xs)) + ' values') ;
-  FOR i := 0 TO 2 DO gaps [i] := 0.0 / 0.0 END ;
+  FOR i := 0 TO 2 DO gaps [i] := NaN END ;
   m := Stats.Mean (gaps) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
 EXCEPT
@@ -170,6 +170,45 @@ found — the second line above.
 So the rule for your own code is one line long: **print n beside
 every statistic of measured data.**  The library will always tell
 you what it was.
+
+`NaN` in the program above is a name the language gives you, as it
+gives you `STR`: the quiet NaN, an `F64` or an `F32` wherever one is
+wanted.  Its bits are the ones numpy, Python and C's `NAN` use.
+`0.0 / 0.0` still makes a NaN, but on an x86 machine it is a NaN with
+its sign bit set, a different bit pattern from numpy's, which shows
+when a file M9 wrote is compared with one Python wrote.
+
+Having a name for NaN invites the test everybody writes first:
+
+```m9 X6NanEq.m9
+MODULE X6NanEq ;
+
+(* EXPECT-ERROR: no '=' with NaN *)
+(* Chapter 6, a program that must NOT compile.  The test everybody
+   writes first for a missing value: is x NaN?  Written with '=' it
+   is never TRUE -- a NaN is unequal to everything, itself included --
+   so the gap it was meant to catch goes straight through.  The
+   checker refuses the comparison and names the test that works.    *)
+
+IMPORT Io ;
+
+VAR x : F64 ;
+
+BEGIN
+  x := NaN ;
+  IF x = NaN THEN Io.WriteLine ('a gap') END
+END X6NanEq.
+```
+
+```refusal X6NanEq
+16:8 X6NanEq body: no '=' with NaN: no comparison with NaN is ever TRUE, except '#', which always is; Math.IsNaN (x) asks (par 2.1)
+```
+
+A NaN is unequal to everything, itself included, so `x = NaN` is
+never TRUE, and the gap it was written to catch would go straight
+through.  The checker refuses every comparison with `NaN` and names
+the question that works: `Math.IsNaN (x)`.  (`x # x` is TRUE exactly
+when `x` is a NaN, which is the same test written as a riddle.)
 
 *(Until 0.14 a NaN in a sample raised `ValueRange`, and skipping was
 the caller's loop — chapter 5's filter is exactly that loop, and it

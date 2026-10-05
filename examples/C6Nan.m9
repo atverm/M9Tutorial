@@ -18,13 +18,13 @@ VAR
 
 BEGIN
   xs [0] := 1.0 ;
-  xs [1] := 0.0 / 0.0 ;             (* a gap, as data has *)
+  xs [1] := NaN ;                   (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3) + ' over ' +
                 Fmt.I64Str (Stats.Count (xs)) + ' of ' +
                 Fmt.I64Str (LEN (xs)) + ' values') ;
-  FOR i := 0 TO 2 DO gaps [i] := 0.0 / 0.0 END ;
+  FOR i := 0 TO 2 DO gaps [i] := NaN END ;
   m := Stats.Mean (gaps) ;
   Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
 EXCEPT
