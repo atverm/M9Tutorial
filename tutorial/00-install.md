@@ -39,7 +39,7 @@ chapters do not run there and why.
 
 ## Route 1: the install package
 
-The [release page](https://github.com/atverm/m9c/releases/tag/v0.14.0)
+The [release page](https://github.com/atverm/m9c/releases/tag/v0.15.0)
 of the compiler's repository, [m9c](https://github.com/atverm/m9c),
 carries one package per distribution, x86-64, each built ON that
 distribution from the same source tarball (the
@@ -48,12 +48,12 @@ every example in these chapters):
 
 | distribution | package | install |
 |---|---|---|
-| Ubuntu 24.04 LTS | `m9_0.14.0-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.14.0-1_amd64.ubuntu24.04.deb` |
-| Ubuntu 26.04 LTS | `m9_0.14.0-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.14.0-1_amd64.ubuntu26.04.deb` |
-| Debian 13 | `m9_0.14.0-1_amd64.debian13.deb` | `sudo apt install ./m9_0.14.0-1_amd64.debian13.deb` |
-| Fedora 43 | `m9-0.14.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.14.0-1.fc43.x86_64.rpm` |
-| Rocky 9 (RHEL 9, Alma 9) | `m9-0.14.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.14.0-1.el9.x86_64.rpm` |
-| Arch | `m9-0.14.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.14.0-1-x86_64.pkg.tar.zst` |
+| Ubuntu 24.04 LTS | `m9_0.15.0-1_amd64.ubuntu24.04.deb` | `sudo apt install ./m9_0.15.0-1_amd64.ubuntu24.04.deb` |
+| Ubuntu 26.04 LTS | `m9_0.15.0-1_amd64.ubuntu26.04.deb` | `sudo apt install ./m9_0.15.0-1_amd64.ubuntu26.04.deb` |
+| Debian 13 | `m9_0.15.0-1_amd64.debian13.deb` | `sudo apt install ./m9_0.15.0-1_amd64.debian13.deb` |
+| Fedora 43 | `m9-0.15.0-1.fc43.x86_64.rpm` | `sudo dnf install ./m9-0.15.0-1.fc43.x86_64.rpm` |
+| Rocky 9 (RHEL 9, Alma 9) | `m9-0.15.0-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.15.0-1.el9.x86_64.rpm` |
+| Arch | `m9-0.15.0-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.15.0-1-x86_64.pkg.tar.zst` |
 
 Each package comes with a `.receipt` beside it — the distribution it
 was built on, its sha256, the tarball it came from, the gcc that
@@ -91,13 +91,13 @@ prefix, which is exactly how the package itself is assembled.
 
 ## Route 3: Windows — experimental
 
-`m9-0.14.0-windows-x86_64.zip` on the same release page is one folder
+`m9-0.15.0-windows-x86_64.zip` on the same release page is one folder
 with everything in it: **its own gcc** (a subset of the MSYS2 UCRT64
 toolchain), the compiler's bootstrap C, the standard library and the
 tools as M9 source, this tutorial as pages, and an `install.bat`.
 
     (unpack the zip anywhere -- your Documents folder is fine)
-    cd m9-0.14.0-windows-x86_64
+    cd m9-0.15.0-windows-x86_64
     install.bat
 
 Run it **from a terminal** rather than by double-clicking: that is
@@ -296,7 +296,7 @@ the museum, which the compiler's own gates keep true.
 
 ## Checking the installation
 
-    m9c --version                 m9c 0.14.0
+    m9c --version                 m9c 0.15.0
     man m9c                       the reference, options and the
                                   supplied-flags contract
     ls /usr/share/doc/m9/modules  the standard library, one page
