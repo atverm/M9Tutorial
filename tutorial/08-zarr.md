@@ -122,17 +122,17 @@ promise from an earlier chapter:
   states its C name and its thread discipline (`[SERIAL]` /
   `[REENTRANT]`) — the compiler emits the serialisation, so a
   global-state C library cannot be raced by accident.  The honest
-  consequence: linking this program names those libraries.  With
-  the store served locally (`python3 -m http.server 18931
-  --directory /tmp/m9stores`), the build is:
+  consequence: linking this program names that library -- and the
+  foreign unit inside ZarrStore does the naming (`LINK
+  "-l:libblosc.so.1"`), so with the store served locally
+  (`python3 -m http.server 18931 --directory /tmp/m9stores`) the
+  build is one line:
 
-      m9c --make -c C8Zarr.m9
-      gcc C8Zarr.o ZarrStore.o Json.o Http.o DynStr.o Io.o Fmt.o \
-          m9rt.c tcpshim.c tlsshim.c -l:libblosc.so.1 \
-          -lssl -lcrypto -lm -o co2
+      m9c -o co2 C8Zarr.m9
 
   `m9c` is deliberately not a build system; what it DOES supply by
-  default (include paths, the module closure, the runtime) it will
-  show you with `-v`.
+  default (include paths, the module closure, the runtime, the
+  libraries the closure's foreign units name) it will show you with
+  `-v`.
 
 [← Previous: timeseries](07-timeseries.md) · [Next: preparing data for plotting →](09-plotting.md)

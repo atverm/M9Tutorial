@@ -6,10 +6,7 @@ MODULE C11Fetch ;
    Build (the store server is started for you when this runs in the
    tutorial; locally, serve examples/data on 18931):
 
-     m9c --make -c Http
-     m9c --make -c C11Fetch
-     gcc -O2 -flto C11Fetch.o Http.o DynStr.o Io.o Fmt.o \
-         m9rt.c tcpshim.c tlsshim.c -lssl -lcrypto -lm -o c11fetch
+     m9c -o c11fetch C11Fetch.m9
 
    Everything a worker writes, it writes AT ITS OWN INDEX, so the
    answer cannot depend on which download finished first -- and the

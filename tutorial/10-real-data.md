@@ -15,10 +15,7 @@ objects, undecoded — so the program below runs here without
 network, and runs unchanged on your machine against the live
 service:
 
-    m9c --make -c C10Icos.m9
-    cc C10Icos.o ZarrStore.o Json.o Http.o Mat.o Math.o Plot.o \
-       DynStr.o Io.o Fmt.o m9rt.c tcpshim.c tlsshim.c fmtshim.c \
-       -lblosc -lssl -lcrypto -lm -o co2fit
+    m9c -o co2fit C10Icos.m9
     ./co2fit https://zarr.icos-cp.eu/icos-obspack.zarr
 
 Same bytes in, same numbers out — that is what the mirror being the
