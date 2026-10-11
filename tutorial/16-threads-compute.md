@@ -65,13 +65,13 @@ TYPE
     w : Work ;
     a, b : PTR Mat.Matrix ;    (* read by every worker, written by none *)
     prod : PTR Mat.Matrix ;    (* rows [r0, r1) of it belong to band k *)
-  END ;
+  END [SHARABLE] ;
 
   InvJob = RECORD
     w : Work ;
     l : PTR Mat.Matrix ;       (* the Cholesky factor, read by all *)
     inv : PTR Mat.Matrix ;     (* columns [c0, c1) of it belong to band k *)
-  END ;
+  END [SHARABLE] ;
 
 (* --- the three bound procedures, and they are all tiny --- *)
 PROCEDURE Claim (VAR w: Work) : I64 =
@@ -360,7 +360,7 @@ TYPE
     w : Work ;
     bytes : SLICE OF BYTE ;      (* the file: read by all, written by none *)
     part : SLICE OF I64 ;        (* one slot per chunk, written by index *)
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;

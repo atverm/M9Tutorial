@@ -43,7 +43,7 @@ TYPE
     w : Work ;
     status : SLICE OF I64 ;   (* one slot per page, written by index *)
     size : SLICE OF I64 ;
-  END ;
+  END [SHARABLE] ;
 
 (* THE PAGES.  Real files from the chapter's own zarr store, served
    on loopback: eight chunks of the CO2 array. *)

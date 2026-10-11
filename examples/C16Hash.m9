@@ -36,7 +36,7 @@ TYPE
     w : Work ;
     bytes : SLICE OF BYTE ;      (* the file: read by all, written by none *)
     part : SLICE OF I64 ;        (* one slot per chunk, written by index *)
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;

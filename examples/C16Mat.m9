@@ -41,13 +41,13 @@ TYPE
     w : Work ;
     a, b : PTR Mat.Matrix ;    (* read by every worker, written by none *)
     prod : PTR Mat.Matrix ;    (* rows [r0, r1) of it belong to band k *)
-  END ;
+  END [SHARABLE] ;
 
   InvJob = RECORD
     w : Work ;
     l : PTR Mat.Matrix ;       (* the Cholesky factor, read by all *)
     inv : PTR Mat.Matrix ;     (* columns [c0, c1) of it belong to band k *)
-  END ;
+  END [SHARABLE] ;
 
 (* --- the three bound procedures, and they are all tiny --- *)
 PROCEDURE Claim (VAR w: Work) : I64 =

@@ -71,7 +71,7 @@ TYPE
     w : Work ;
     status : SLICE OF I64 ;   (* one slot per page, written by index *)
     size : SLICE OF I64 ;
-  END ;
+  END [SHARABLE] ;
 
 (* THE PAGES.  Real files from the chapter's own zarr store, served
    on loopback: eight chunks of the CO2 array. *)
@@ -211,6 +211,15 @@ where `k` is the page this worker claimed. Nobody appends to a shared
 list, so the order things arrive in never reaches the answer. The
 program prints in page order because the *data* is in page order —
 not because anything was sorted afterwards.
+
+**`Job` says that it is shared.** The record ends `END [SHARABLE]`:
+every worker holds the same `Job`, and the attribute is the author's
+claim that their writes to it never meet — here, one slot each. The
+compiler cannot prove a claim like that, so it asks for it to be
+written down: a `THREAD` handed a record it does not own, which is
+neither a monitor nor marked `[SHARABLE]`, is refused, and
+`m9c --review` lists every `[SHARABLE]` record for the person reading
+the program.
 
 **Everything shared and changing is in the monitor, and the monitor
 is tiny.** `Work` is a `MONITOR RECORD`: its fields can be touched
