@@ -120,12 +120,11 @@ compiled by the `m9c` you just installed.
 compiler as the Linux one — the runtime carries `_WIN32` paths beside
 the POSIX ones and the *generated* C never names a platform — but it
 is verified under wine and on one real Windows machine, where Linux
-is tested across six distributions.  Two chapters do not work there
-yet: **chapter 14**, because netCDF resolves paths through its own
-Windows converter, and **chapter 17**, because it runs `sort` and
-`uniq` and Windows has neither.  The rest, zarr over TLS and threads
-included, runs.  If something else breaks, that is worth reporting —
-it is what the label is for.
+is tested across six distributions.  One chapter does not work there
+yet: **chapter 17**, because it runs `sort` and `uniq` and Windows has
+no `uniq`.  The rest — netCDF, zarr over TLS and threads included —
+runs (measured on a Windows 11 machine, 2026-10-18).  If something
+else breaks, that is worth reporting — it is what the label is for.
 
 ## Route 4: macOS — experimental
 

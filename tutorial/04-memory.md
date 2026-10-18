@@ -218,7 +218,11 @@ Walk the pieces:
   `+` and frees at the exit, so there is no pool to name and nothing
   to free — and a string that leaves through `RETURN` or a `VAR`
   parameter is moved into the caller's frame on the way out, which
-  is why `Fmt.Fixed` takes no pool.  `s := s + x` in a loop is
+  is why `Fmt.Fixed` takes no pool.  A `+` that its own statement
+  consumes — handed to a call, compared in a condition, assigned to
+  a number — is freed when that statement ends, so a loop that
+  writes a composed line each turn uses the arena for one line, not
+  for all of them.  `s := s + x` in a loop is
   linear: the arena extends its latest allocation in place.  That
   holds while nothing else is carved between the appends; where it
   cannot be relied on, `DynStr` grows a buffer in a pool you name —
