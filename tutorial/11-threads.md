@@ -317,7 +317,7 @@ END X11Share.
 ```
 
 ```refusal X11Share
-28:3 X11Share.Worker: cannot write through a value parameter: j is a shared borrow (take VAR, par 4.1)
+X11Share.m9:28:3: X11Share.Worker: cannot write through a value parameter: j is a shared borrow (take VAR, par 4.1)
 ```
 
 A `PTR` parameter written without `VAR` is a **shared borrow**

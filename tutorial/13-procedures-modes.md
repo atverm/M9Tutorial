@@ -358,7 +358,7 @@ END X13Fall.
 ```
 
 ```refusal X13Fall
-14:1 X13Fall.Sign: a function must RETURN or RAISE on every path: Sign can reach its END (par 3)
+X13Fall.m9:14:1: X13Fall.Sign: a function must RETURN or RAISE on every path: Sign can reach its END (par 3)
 ```
 
 The shared-borrow rule, on a pointer passed by value:
@@ -399,8 +399,8 @@ END X13Write.
 ```
 
 ```refusal X13Write
-20:3 X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
-21:3 X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
+X13Write.m9:20:3: X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
+X13Write.m9:21:3: X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
 ```
 
 And the retention rule, on a borrowed string that reaches module
@@ -433,7 +433,7 @@ END X13Keep.
 ```
 
 ```refusal X13Keep
-17:13 X13Keep.Remember: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1)
+X13Keep.m9:17:13: X13Keep.Remember: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1)
 ```
 
 Both diagnostics name the parameter and the mode that would make

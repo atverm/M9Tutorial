@@ -201,7 +201,7 @@ END X6NanEq.
 ```
 
 ```refusal X6NanEq
-16:8 X6NanEq body: no '=' with NaN: no comparison with NaN is ever TRUE, except '#', which always is; Math.IsNaN (x) asks (par 2.1)
+X6NanEq.m9:16:8: X6NanEq body: no '=' with NaN: no comparison with NaN is ever TRUE, except '#', which always is; Math.IsNaN (x) asks (par 2.1)
 ```
 
 A NaN is unequal to everything, itself included, so `x = NaN` is

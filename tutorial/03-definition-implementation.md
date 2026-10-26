@@ -103,7 +103,7 @@ END X3Sig.
 ```
 
 ```refusal X3Sig
-16:1 X3Sig.ToKelvin: signature differs from definition:
+X3Sig.m9:16:1: X3Sig.ToKelvin: signature differs from definition:
 ```
 
 Omit a promised procedure and it is named:
@@ -132,7 +132,7 @@ END X3Missing.
 ```
 
 ```refusal X3Missing
-13:1 X3Missing.ToFahrenheit: declared in the definition but not implemented
+X3Missing.m9:13:1: X3Missing.ToFahrenheit: declared in the definition but not implemented
 ```
 
 ## The client's side of the contract
@@ -154,20 +154,25 @@ VAR
   r : ARRAY 3 OF F64 ;
 
 BEGIN
-  r [0] := 5.5 ;  r [1] := -2.0 ;  r [2] := 11.25 ;
-  Io.Write ('mean of the series: ') ;
-  Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
-  Io.WriteLine (' K') ;
-  r [1] := -300.0 ;                (* not a temperature *)
-  Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
-  Io.WriteLine (' never printed')
+  BEGIN
+    r [0] := 5.5 ;  r [1] := -2.0 ;  r [2] := 11.25 ;
+    Io.Write ('mean of the series: ') ;
+    Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
+    Io.WriteLine (' K') ;
+    r [1] := -300.0 ;              (* not a temperature *)
+    Io.Write (Fmt.Fixed (Temps.Mean (r), 2)) ;
+    Io.WriteLine (' never printed')
+  EXCEPT
+  | Temps.TooCold (got, limit) :
+      Io.Write ('TooCold: ') ;
+      Io.Write (Fmt.Fixed (got, 1)) ;
+      Io.Write (' is below ') ;
+      Io.WriteLine (Fmt.Fixed (limit, 2))
+  END
 EXCEPT
-| Temps.TooCold (got, limit) :
-    Io.Write ('TooCold: ') ;
-    Io.Write (Fmt.Fixed (got, 1)) ;
-    Io.Write (' is below ') ;
-    Io.WriteLine (Fmt.Fixed (limit, 2))
 | ValueRange :
+    (* the outer block: the TooCold handler formats too, and a
+       handler is outside the block it handles for *)
     Io.ErrLine ('formatting failed') ;
     Io.Halt (1)
 END C3Use.
@@ -185,7 +190,10 @@ strings fished out of a log.  And the handler is not optional
 politeness: `Mean` declares `RAISES TooCold`, this program's body
 calls it, and the checker required this frame to either declare the
 exception onward or answer for it.  Delete the handler and the
-module joins the X-files.
+module joins the X-files.  A handler answers only for its own
+block: the `TooCold` arm formats with `Fmt.Fixed`, which can raise
+`ValueRange` itself, so that handler sits in an outer block around
+the first.
 
 The deeper point of this chapter: **the signature is the review.**
 A reader deciding whether to trust `Temps.Mean` reads one

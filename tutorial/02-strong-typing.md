@@ -38,7 +38,7 @@ END X2Assign.
 ```
 
 ```refusal X2Assign
-19:8 X2Assign body: cannot assign F64 to I64 (no implicit conversions, par 2.1)
+X2Assign.m9:19:8: X2Assign body: cannot assign F64 to I64 (no implicit conversions, par 2.1)
 ```
 
 That diagnostic is real — the gate compiles this file on every run
@@ -148,7 +148,7 @@ END X2Raises.
 ```
 
 ```refusal X2Raises
-12:1 X2Raises.Narrow: unhandled RAISES ValueRange from I32 conversion
+X2Raises.m9:12:1: X2Raises.Narrow: unhandled RAISES ValueRange from I32 conversion
 ```
 
 This is what makes a RAISES list worth reading: it is not

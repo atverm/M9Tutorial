@@ -280,7 +280,7 @@ END X4Escape.
 ```
 
 ```refusal X4Escape
-24:3 X4Escape.Make: pool-interior pointer escapes its pool: p lives in scratch, which dies with this frame (par 4.3)
+X4Escape.m9:24:3: X4Escape.Make: pool-interior pointer escapes its pool: p lives in scratch, which dies with this frame (par 4.3)
 ```
 
 The type `PTR Point IN scratch` names the pool the pointer lives

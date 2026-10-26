@@ -204,7 +204,7 @@ END X12Int.
 ```
 
 ```refusal X12Int
-18:16 X12Int body: cannot concatenate a string with I64
+X12Int.m9:18:16: X12Int body: cannot concatenate a string with I64
 ```
 
 `Fmt.I64Str (n)` says how, `Fmt.Fixed (x, 3)` says how for a real,
