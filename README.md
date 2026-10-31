@@ -2,41 +2,42 @@
 
 The compiler, runtime and standard library this tutorial teaches are
 in the [m9c](https://github.com/atverm/m9c) repository (`./build.sh`
-needs gcc and nothing else), and so are the install packages for six
-Linux distributions (Ubuntu 24.04 and 26.04, Debian 13, Fedora 43,
-Rocky 9, Arch), an **experimental** Windows zip since 0.8.0 and an
-**experimental** macOS Homebrew tap since 0.12.0, on its
-[release page](https://github.com/atverm/m9c/releases).  Linux
-x86-64 is the primary platform; the other two are the same compiler
-verified on one machine of each kind.  The m9c repository also
-carries two [Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
-for writing M9 with an AI assistant; chapter 0 says how to use them.
+needs gcc and nothing else).  Its
+[release page](https://github.com/atverm/m9c/releases) carries the
+install packages for six Linux distributions (Ubuntu 24.04 and
+26.04, Debian 13, Fedora 43, Rocky 9, Arch), an **experimental**
+Windows zip since 0.8.0 and an **experimental** macOS Homebrew tap
+since 0.12.0.  Linux x86-64 is the primary platform; the other two
+are the same compiler verified on one machine of each kind.  The m9c
+repository also carries two [Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
+for writing M9 with an AI assistant, and chapter 0 says how to use
+them.
 
 M9 (Modula-9) is a Wirth-family language for scientific computing,
-designed so the result can be trusted and reproduced — by your
+designed so the result can be trusted and reproduced: by your
 reviewer, by your future self, by whoever inherits the code.  You
-get exactly what is written, and when what is written is wrong the
-compiler tells you and refuses to run it, rather than letting the
-program go quietly on and publish a number no one can reproduce.
-Every import is named, every numeric width is exact, every error a
-procedure can raise is written in its signature, every allocation
-says which pool owns it — and the safety checks are part of what a
-program *means*, always on, with no build that leaves them out.  The
-cost is a little more typing; the return is code a colleague, a
-reviewer, or a student can read and trust without running it, that
-still rebuilds and gives the same bits years from now.
+get exactly what is written.  When that is wrong, the compiler tells
+you and refuses to run it, rather than letting the program go
+quietly on and publish a number no one can reproduce.  Every import
+is named, every numeric width is exact, every error a procedure can
+raise is written in its signature, and every allocation says which
+pool owns it.  The safety checks are part of what a program *means*,
+always on, with no build that leaves them out.  The cost is a little
+more typing.  The return is code a colleague, a reviewer, or a
+student can read and trust without running it, and that still
+rebuilds and gives the same bits years from now.
 
 **The tutorial is live at
-[tutorial.modula9.net](https://tutorial.modula9.net)** — every code
+[tutorial.modula9.net](https://tutorial.modula9.net)**.  Every code
 example on those pages is editable and runs, sandboxed, on the
-server; what you read here is the same material, gated by the same
+server.  The text here is the same material, gated by the same
 tests.
 
-The tutorial service is, of course, **written entirely in M9** —
-the HTTP server, the compile-and-run sandbox pipeline, the whole
-backend — with a little JavaScript on the frontend for the editable
-cells.  Serving the tutorial with the language it teaches is the
-claim made structural.
+The tutorial service is, of course, **written entirely in M9**: the
+HTTP server, the compile-and-run sandbox pipeline, the whole
+backend.  A little JavaScript on the frontend serves the editable
+cells.  A tutorial served by the language it teaches makes the claim
+structural.
 
 This repository holds the tutorial's example programs, the full
 tutorial text ([`tutorial/`](tutorial/README.md), the same chapters
@@ -44,59 +45,62 @@ the site serves), and the M9 compiler package.
 
 ## License
 
-Code — the examples, the tutorial text, the M9 compiler in the
-package — is licensed under the **GNU GPL v3** (see
+Code (the examples, the tutorial text, the M9 compiler in the
+package) is licensed under the **GNU GPL v3** (see
 [LICENSE](LICENSE)).  The measurement data in
 `examples/data/icos-obspack.zarr` remains **CC BY 4.0** by the ICOS
-data licence ([doi:10.18160/JZ2X-GZGU](https://doi.org/10.18160/JZ2X-GZGU));
-cite ICOS when you use it.
+data licence ([doi:10.18160/JZ2X-GZGU](https://doi.org/10.18160/JZ2X-GZGU)).
+Cite ICOS when you use it.
 
 The language itself is defined in one document, the
-[M9 report](https://github.com/atverm/m9c/blob/main/docs/M9-report.md)
--- the normative specification, where every rule is stated together
-with the observed failure that made it a rule.  These chapters teach
-by worked example; that is where the rules live.
+[M9 report](https://github.com/atverm/m9c/blob/main/docs/M9-report.md).
+It is the normative specification, where every rule is stated
+together with the observed failure that made it a rule.  These
+chapters teach by worked example; the report is where the rules
+live.
 
 ## Install
 
 The compiler's [release page](https://github.com/atverm/m9c/releases/tag/v0.25.4)
-carries one package per distribution — Ubuntu 24.04 and 26.04,
-Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch, x86-64 —
-each built on
-that distribution from the one attached source tarball and made to
-compile and run an M9 program there before it was published; the
-`.receipt` beside each says on what, with which gcc, and its sha256.
-gcc is the only compiler any of them needs.  For Ubuntu 24.04:
+carries one package per distribution, x86-64: Ubuntu 24.04 and
+26.04, Debian 13, Fedora 43, Rocky 9 (RHEL 9 family) and Arch.  Each
+was built on that distribution from the one attached source tarball,
+and made to compile and run an M9 program there before it was
+published.  The `.receipt` beside each says on what, with which gcc,
+and its sha256.  gcc is the only compiler any of them needs.  For
+Ubuntu 24.04:
 
     sudo apt install ./m9_0.25.4-1_amd64.ubuntu24.04.deb
 
 (`dnf install ./m9-0.25.4-1.fc43.x86_64.rpm`, `./m9-0.25.4-1.el9.x86_64.rpm`,
 `pacman -U ./m9-0.25.4-1-x86_64.pkg.tar.zst` for the others; chapter 0
-of the tutorial has the whole table.)  This installs `m9c` (the compiler), the runtime, the standard
-library as readable M9 source in `/usr/lib/m9`, per-module reference
-pages in `/usr/share/doc/m9/modules`, `man m9c`, and a VS Code
-extension (syntax highlighting, hover documentation, completion) at
-`/usr/share/m9/vscode-m9` — link it once with:
+of the tutorial has the whole table.)  This installs `m9c` (the
+compiler), the runtime, the standard library as readable M9 source
+in `/usr/lib/m9`, per-module reference pages in
+`/usr/share/doc/m9/modules`, `man m9c`, and a VS Code extension
+(syntax highlighting, hover documentation, completion) at
+`/usr/share/m9/vscode-m9`.  Link it once with:
 
     ln -s /usr/share/m9/vscode-m9 \
           ~/.vscode/extensions/atverm.m9-lang-0.2.0
 
 The package is built on Ubuntu 26.04 for amd64.  On another release
-the C library versions will not match — the compiler itself needs
-nothing but gcc, so building from source is the route there.
+the C library versions will not match.  The compiler itself needs
+nothing but gcc, so a build from source is the route there.
 
 **Windows, experimental.**  The same page carries
 `m9-0.25.4-windows-x86_64.zip`: one folder with its own gcc in it and
 an `install.bat` that compiles the compiler on your machine.  It is
 verified under wine and on one Windows machine, and two chapters do
-not work there yet — 14 (netCDF resolves paths its own way on
+not work there yet: 14 (netCDF resolves paths its own way on
 Windows) and 17 (it runs `sort` and `uniq`).  Chapter 0 has the
 details.
 
 **macOS, experimental.**  `brew tap atverm/m9 && brew install m9`
 builds the compiler on your Mac with Homebrew's gcc and installs
-OpenSSL, blosc and netCDF beside it.  Verified on one Apple-silicon
-Mac; every chapter runs there.  Chapter 0 has the details.
+OpenSSL, blosc and netCDF beside it.  It is verified on one
+Apple-silicon Mac, and every chapter runs there.  Chapter 0 has the
+details.
 
 ## The first program
 
@@ -105,7 +109,7 @@ Mac; every chapter runs there.  Chapter 0 has the details.
     m9c --make -o hello C1Hello.m9
     ./hello
 
-`m9c` checks the program, generates C11, and drives gcc; `--make`
+`m9c` checks the program, generates C11, and drives gcc.  `--make`
 also builds any imported library module.  A refused program prints
 its diagnostics with line and column and writes nothing.
 
@@ -130,20 +134,23 @@ Every example is a **complete program**, and each lands one idea:
 | `C9Plot.m9` | figures as deterministic SVG strings — a plot you can `cmp` |
 | `C10Icos.m9` | the capstone: nine years of real ICOS CO2 (Hyltemossa, 150 m) from the Carbon Portal's zarr service — QC by the station's flags, a Fourier fit of trend + seasonal cycle, plotted.  Point it at `https://zarr.icos-cp.eu/icos-obspack.zarr` and it reads the live service; `examples/data/icos-obspack.zarr` is a raw byte mirror of the same arrays for offline runs (ICOS ObsPack, CC BY 4.0, doi:10.18160/JZ2X-GZGU) |
 
-The four `X*.m9` files must **not** compile — each carries an
+The eleven `X*.m9` files must **not** compile.  Each carries an
 `EXPECT-ERROR` line naming the diagnostic the compiler must give:
 implicit conversion refused, an undeclared RAISES, a signature that
 drifts from its definition, a promised procedure never implemented,
-a pool-interior pointer escaping the frame that owns it.
+a pool-interior pointer escaping the frame that owns it, a NaN
+compared with `=`, a write through a shared borrow (twice), a
+string joined with a number, a function that can fall off its end,
+and a retention not declared `KEPT`.
 
-`expect/` holds the exact output of every runnable example; the
+`expect/` holds the exact output of every runnable example.  The
 upstream repository's CI compiles and runs all of them on every
 commit and compares byte for byte, so these programs cannot drift
 from the compiler you just installed.
 
-Chapter 7 wants a local zarr store to read: any HTTP server over a
+Chapter 8 wants a local zarr store to read: any HTTP server over a
 zarr v2 directory works, and the example takes the URL as its first
 argument.
 
-Chapters 7 and 8 bind C libraries (blosc; the SVG number formatter),
-so their build lines name those — see the comments in the files.
+Chapters 8 and 9 bind C libraries (blosc; the SVG number formatter),
+so their build lines name those.  See the comments in the files.

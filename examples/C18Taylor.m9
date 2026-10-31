@@ -1,6 +1,8 @@
 MODULE C18Taylor ;
 
-(* Chapter 18: how good is a model, in one picture.
+IMPORT Text ;
+
+(* Chapter 18 shows how good a model is, in one picture.
 
    A Taylor diagram places every comparison of a model with its
    observations by two numbers: how much the model VARIES compared
@@ -40,8 +42,9 @@ CONST
                                (* the legend has room for about twelve
                                   characters a name *)
 
-(* the column of that name, declared a 64-bit real before the parse;
-   a file without it stops the program, naming what was missing *)
+(* Real answers the column of that name, declared a 64-bit real
+   before the parse.  A file without it stops the program, naming
+   what was missing. *)
 PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
 VAR c : I64 ;
 BEGIN
@@ -55,8 +58,8 @@ BEGIN
   RETURN c
 END Real ;
 
-(* model 1 and 2: the least-squares line of y on the driver x, and
-   what it says at every x *)
+(* Line is models 1 and 2: the least-squares line of y on the
+   driver x, and what it says at every x. *)
 PROCEDURE Line (RO x, y: SLICE OF F64 ; VAR m: SLICE OF F64)
   RAISES Stats.TooFew, ValueRange, Overflow =
 VAR
@@ -69,8 +72,8 @@ BEGIN
   END
 END Line ;
 
-(* model 3: every half-hour of the day averaged over the days, and
-   that average day repeated *)
+(* MeanDay is model 3: every half-hour of the day averaged over the
+   days, and that average day repeated. *)
 PROCEDURE MeanDay (RO y: SLICE OF F64 ; VAR m: SLICE OF F64)
   RAISES ValueRange =
 VAR
@@ -85,9 +88,9 @@ BEGIN
   END
 END MeanDay ;
 
-(* model 4: the value 24 hours earlier.  The first day has no
-   yesterday, so it is MISSING -- a NaN -- and Stats.Taylor compares
-   the six days where both are present *)
+(* Yesterday is model 4: the value 24 hours earlier.  The first day
+   has no yesterday, so it is MISSING, a NaN.  Stats.Taylor compares
+   the six days where both are present. *)
 PROCEDURE Yesterday (RO y: SLICE OF F64 ; VAR m: SLICE OF F64) =
 VAR i : I64 ;
 BEGIN
@@ -100,14 +103,15 @@ BEGIN
   END
 END Yesterday ;
 
-(* s and blanks after it, to make a column of the table *)
+(* PadTo answers s and blanks after it, to make a column of the
+   table. *)
 PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
 VAR
   pad : STR ;
   i : I64 ;
 BEGIN
   pad := '' ;
-  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  FOR i := Text.BLen (s) TO width - 1 DO pad := pad + ' ' END ;
   RETURN s + pad
 END PadTo ;
 
@@ -176,7 +180,7 @@ BEGIN
   svg := Plot.RenderTaylor ('A week of fluxes against four guesses',
                             ratio, corr, Models, Fluxes) ;
   Io.WriteFile (Figure, svg) ;
-  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (LEN (svg)) + ' bytes')
+  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (Text.BLen (svg)) + ' bytes')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a

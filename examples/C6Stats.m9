@@ -1,7 +1,7 @@
 MODULE C6Stats ;
 
-(* Chapter 6.  Statistics with real p-values, verified against
-   scipy digit for digit in the library's own gate -- which is why a
+(* Chapter 6 computes statistics with real p-values.  The library's
+   own gate verifies them against scipy digit for digit, so a
    tutorial can print them without hedging.  Two synthetic samples:
    y depends on x almost linearly, and the two groups differ.       *)
 

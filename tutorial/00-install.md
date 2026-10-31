@@ -1,41 +1,42 @@
 # 0 — Installing and running the compiler
 
-There are two routes to a working `m9c` on Linux, and both end at
-the same place; Windows and macOS each have a route of their own
-below.  What they need is deliberately small: **the only compiler
-required is gcc.**  M9 compiles to C11, the generated C for the
-toolchain itself is checked into the repository as the bootstrap,
-and a CI gate builds the whole thing on a machine where every other
-compiler has been replaced by a script that fails loudly — so the
-claim is tested, not asserted.
+Two routes lead to a working `m9c` on Linux, and both end at the
+same place.  Windows and macOS each have a route of their own below.
+The routes need deliberately little: **the only compiler required
+is gcc.**  M9 compiles to C11, and the generated C for the toolchain
+itself is checked into the repository as the bootstrap.  A CI gate
+builds the whole thing on a machine where a script that fails loudly
+has replaced every other compiler.  So the claim is tested, not
+asserted.
 
-For your work that means something concrete: what you build today
-rebuilds the same way in ten years, with a compiler every machine
-already has, and no chain of pinned versions to keep alive for the
-analysis to run again.
+Your work gains something concrete from this.  A program you build
+today rebuilds the same way in ten years, with a compiler every
+machine already has.  You keep no chain of pinned versions alive for
+the analysis to run again.
 
-It is also an unusually good language to have an AI write for you,
-and for the same reason it is good to review: the explicitness the
-compiler insists on — every import named, every width exact, every
-error a procedure can raise declared, every allocation owned — lets
-it act as a strict reviewer of whatever a model produces, refusing
-the quiet mistakes a code generator makes rather than running them.
-Code you did not write by hand arrives already checked, which is
-exactly what you need before you trust a number it computed.
+M9 is also an unusually good language to have an AI write for you,
+for the same reason that it is good to review.  The compiler insists
+on explicitness: every import named, every width exact, every error
+a procedure can raise declared, every allocation owned.  That lets
+it act as a strict reviewer of whatever a model produces.  It
+refuses the quiet mistakes a code generator makes rather than
+running them.  Code you did not write by hand arrives already
+checked, and you need exactly that before you trust a number it
+computed.
 
 ## Where it runs
 
 M9 runs on three platforms today.  **Linux x86-64** is the primary
 one: install packages for Ubuntu 24.04 and 26.04, Debian 13, Fedora
 43, Rocky 9 (the RHEL 9 family) and Arch, or a build from source on
-any Linux that has gcc — every gate the language is held to runs
+any Linux that has gcc.  Every gate the language is held to runs
 there, on every push.  **Windows 10 and 11 (x86-64)** has an
 experimental zip since 0.8.0, route 3 below.  **macOS on Apple
 silicon** has an experimental Homebrew tap since 0.12.0, route 4.
 Experimental means the same compiler, runtime and library, with each
-platform's differences under one `#ifdef`, verified on one machine
-of that kind rather than across a range; the two routes say which
-chapters do not run there and why.
+platform's differences under one `#ifdef`.  It is verified on one
+machine of that kind rather than across a range.  The two routes say
+which chapters do not run there and why.
 
 ## Route 1: the install package
 
@@ -55,23 +56,24 @@ every example in these chapters):
 | Rocky 9 (RHEL 9, Alma 9) | `m9-0.25.4-1.el9.x86_64.rpm` | `sudo dnf install ./m9-0.25.4-1.el9.x86_64.rpm` |
 | Arch | `m9-0.25.4-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./m9-0.25.4-1-x86_64.pkg.tar.zst` |
 
-Each package comes with a `.receipt` beside it — the distribution it
-was built on, its sha256, the tarball it came from, the gcc that
-built it, and the line proving the installed compiler compiled and
-ran a program with an empty environment.  What is on the page is
-what came back from the build machine, unchanged.
+Each package comes with a `.receipt` beside it.  The receipt names
+the distribution it was built on, its sha256, the tarball it came
+from, the gcc that built it, and the line proving the installed
+compiler compiled and ran a program with an empty environment.  The
+page shows what came back from the build machine, unchanged.
 
 Any of them puts `m9c` in `/usr/bin`, the runtime header in
-`/usr/include/m9`, the runtime archive at `/usr/lib/libm9rt.a`, and
-the standard library — as M9 SOURCE, because a readable library is
-part of the point — in `/usr/lib/m9`, which the compiler searches
+`/usr/include/m9` and the runtime archive at `/usr/lib/libm9rt.a`.
+The standard library goes in `/usr/lib/m9` as M9 SOURCE, because a
+readable library is part of the point.  The compiler searches it
 without any variable being set.  The per-module reference pages land
 in `/usr/share/doc/m9/modules`, the language report beside them, and
 `man m9c` works.
 
-The two debs are different files — a deb names its distribution's
-library versions — so take the one for your distribution.  On any
-other distribution or release, route 2 is a two-line build.
+The packages are different files, because each names its
+distribution's library versions.  Take the one for your
+distribution.  On any other distribution or release, route 2 is a
+two-line build.
 
 ## Route 2: from source
 
@@ -100,31 +102,31 @@ tools as M9 source, this tutorial as pages, and an `install.bat`.
     cd m9-0.25.4-windows-x86_64
     install.bat
 
-Run it **from a terminal** rather than by double-clicking: that is
-what keeps Windows from asking whether you trust a file you just
-downloaded, and it is where you will read what it says.  It opens by
-telling you what it will put in the folder and that your machine is
-about to compile the compiler from its own C — the same claim route 2
-makes, with the gcc in the box — and then asks once.  About half a
-minute later there is a `bin\m9c.exe` your machine built.
+Run it **from a terminal** rather than by double-clicking.  The
+terminal keeps Windows from asking whether you trust a file you just
+downloaded, and you will read there what it says.  It opens by
+telling you what it will put in the folder, and that your machine is
+about to compile the compiler from its own C.  Route 2 makes the
+same claim, with the gcc in the box.  Then it asks once.  About half
+a minute later there is a `bin\m9c.exe` your machine built.
 
-Two things it asks about separately, because they are the only ones
+It asks about two things separately, because they are the only ones
 that write outside the folder: the **VS Code extension** (into
 `%USERPROFILE%\.vscode\extensions`) and your **PATH**.  Decline
 either and it says how to do it by hand.  At the end it offers to
-start the tutorial locally — the same pages you are reading, served
+start the tutorial locally: the same pages you are reading, served
 from that folder, with every example runnable in the browser and
 compiled by the `m9c` you just installed.
 
 **Experimental means experimental.**  The Windows build is the same
-compiler as the Linux one — the runtime carries `_WIN32` paths beside
-the POSIX ones and the *generated* C never names a platform — but it
+compiler as the Linux one.  The runtime carries `_WIN32` paths beside
+the POSIX ones, and the *generated* C never names a platform.  But it
 is verified under wine and on one real Windows machine, where Linux
 is tested across six distributions.  One chapter does not work there
 yet: **chapter 17**, because it runs `sort` and `uniq` and Windows has
-no `uniq`.  The rest — netCDF, zarr over TLS and threads included —
-runs (measured on a Windows 11 machine, 2026-10-18).  If something
-else breaks, that is worth reporting — it is what the label is for.
+no `uniq`.  The rest runs, netCDF, zarr over TLS and threads included
+(measured on a Windows 11 machine, 2026-10-18).  If something else
+breaks, that is worth reporting.  It is what the label is for.
 
 ## Route 4: macOS — experimental
 
@@ -134,22 +136,23 @@ the same source tarball the Linux packages are built from:
     brew tap atverm/m9
     brew install m9
 
-That builds `m9c` on your machine with Homebrew's gcc and installs it
-with OpenSSL, blosc and netCDF beside it, so every chapter's program
-links on the first try.  The gcc is the point: Apple's `cc` is clang,
-which takes neither gcc's inliner budget nor a nested function and
-warns on every build, so `m9c` on a Mac drives Homebrew's gcc — the
-arrangement the Windows zip has with the gcc in its box.  `brew
-install` says where the VS Code extension is and the one `ln -s` that
-links it.
+That builds `m9c` on your machine with Homebrew's gcc, and installs
+it with OpenSSL, blosc and netCDF beside it, so every chapter's
+program links on the first try.  The gcc is the point.  Apple's `cc`
+is clang, which takes neither gcc's inliner budget nor a nested
+function and warns on every build.  So `m9c` on a Mac drives
+Homebrew's gcc, the arrangement the Windows zip has with the gcc in
+its box.  `brew install` says where the VS Code extension is, and
+gives the one `ln -s` that links it.
 
-**Experimental means experimental.**  It is the same compiler — every
+**Experimental means experimental.**  It is the same compiler.  Every
 macOS difference in the runtime and the driver is under `__APPLE__`
-or `macos`, and the *generated* C never names a platform — verified on
-one Apple-silicon Mac, where Linux is tested across six distributions;
-Intel Macs are untested.  Every chapter of this tutorial runs there,
-zarr over TLS and threads included.  If something breaks, that is
-worth reporting — it is what the label is for.
+or `macos`, and the *generated* C never names a platform.  It is
+verified on one Apple-silicon Mac, where Linux is tested across six
+distributions.  Intel Macs are untested.  Every chapter of this
+tutorial runs there, zarr over TLS and threads included.  If
+something breaks, that is worth reporting.  It is what the label is
+for.
 
 ## The first program
 
@@ -163,17 +166,18 @@ worth reporting — it is what the label is for.
     m9c --make -o hello Hello.m9
     ./hello
 
-`m9c` checks, generates C, and drives gcc; `--make` also builds any
+`m9c` checks, generates C, and drives gcc.  `--make` also builds any
 imported module whose object is missing or stale, deepest first.
-Without `--make`, a missing library object is not an error dump —
-it is NAMED, with the exact command that produces it, before the C
-compiler runs.  The compiler supplies the include paths, the module
-objects, the runtime and `-lm` on its own; `-v` prints the composed
-gcc line when you want to see precisely what it did, and anything
-you place after `--` replaces the supplied flags entirely, because
-m9c is not a build system and does not pretend to be one.
+Without `--make`, a missing library object is not an error dump.
+The compiler NAMES it, with the exact command that produces it,
+before the C compiler runs.  The compiler supplies the include
+paths, the module objects, the runtime and `-lm` on its own.  `-v`
+prints the composed gcc line when you want to see precisely what it
+did.  Anything you place after `--` replaces the supplied flags
+entirely, because m9c is not a build system and does not pretend to
+be one.
 
-The flags you will actually use:
+You will actually use these flags:
 
     m9c --make -o prog Main.m9    compile and link a program
     m9c --make -c Mod             compile one module to Mod.o + Mod.h
@@ -185,55 +189,56 @@ The flags you will actually use:
     m9c --version                 say which m9c this is
 
 A refused program prints its diagnostics to stderr, with line and
-column, and writes nothing — there is no output to half-trust.
+column, and writes nothing.  There is no output to half-trust.
 
 ## The editor: syntax and docstrings in VS Code
 
 The repository ships a VS Code extension with the M9 grammar
-(highlighting), HOVER DOCUMENTATION and dot-completion.  Hovers and
-completion are fed by `m9c --doc` — the same generated pages you
-read in `/usr/share/doc/m9/modules` — never by a private re-scan of
-the source, so what the editor shows you is what the compiler
-believes.  (The repository refuted the second-scanner design with
-its own corpus: a code generator holding eighteen string literals
-containing `(*` defeats any scanner that does not lex strings.)
+(highlighting), HOVER DOCUMENTATION and dot-completion.  `m9c --doc`
+feeds hovers and completion, never a private re-scan of the source.
+It makes the same generated pages you read in
+`/usr/share/doc/m9/modules`.  So the editor shows you what the
+compiler believes.  (The repository refuted the second-scanner
+design with its own corpus: a code generator holding eighteen string
+literals containing `(*` defeats any scanner that does not lex
+strings.)
 
 From the Debian package, the extension is installed at
-`/usr/share/m9/vscode-m9`; VS Code loads per-user extensions, so
+`/usr/share/m9/vscode-m9`.  VS Code loads per-user extensions, so
 link it once:
 
     ln -s /usr/share/m9/vscode-m9 \
           ~/.vscode/extensions/atverm.m9-lang-0.2.0
 
 From a source tree, link `tools/vscode-m9` to the same place.
-Restart VS Code; `.m9` files get the grammar, and hovering
+Restart VS Code.  `.m9` files get the grammar, and a hover over
 `Io.WriteLine` shows its contract.  If your modules import things
 outside the default search path, the `m9.includePaths` setting
-names the extra directories, and everything documented in chapter 3
-— your own definition comments included — appears in your own
+names the extra directories.  Everything documented in chapter 3,
+your own definition comments included, then appears in your own
 hovers.
 
 ## Other editors: the language server
 
-For editors that speak the Language Server Protocol — Neovim, Helix,
-Emacs with eglot, Kate — the repository carries `m9lsp`, a language
+For editors that speak the Language Server Protocol (Neovim, Helix,
+Emacs with eglot, Kate), the repository carries `m9lsp`, a language
 server written in M9 itself (`corpus/Lsp.m9`).  It publishes
-diagnostics on open and on save, and it holds the same rule as the
-VS Code extension: it never lexes M9 privately.  Every diagnostic is
-the compiler's own — the server runs `m9c --check` (check, print,
+diagnostics on open and on save.  It holds the same rule as the VS
+Code extension: it never lexes M9 privately.  Every diagnostic is
+the compiler's own.  The server runs `m9c --check` (check, print,
 write nothing) and republishes the messages with their line and
 column, so an editor squiggle can never disagree with the build.
 
-The server is not a second binary to install: `Lsp.m9` ships in the
-standard library, and you build it with the compiler you already
-have — one command, anywhere you have write permission:
+The server is not a second binary to install.  `Lsp.m9` ships in
+the standard library, and you build it with the compiler you already
+have.  It takes one command, anywhere you have write permission:
 
     m9c --make -o m9lsp Lsp
 
-This needs m9c 0.5.0 or newer (`m9c --version` says): 0.4.1's notes
-claimed the library module and its package did not install it, which
-is what an installed-package test now checks.  From a source build
-(route 2), any current checkout works.
+This needs m9c 0.5.0 or newer (`m9c --version` says).  0.4.1's
+notes claimed the library module, and its package did not install
+it; an installed-package test now checks exactly that.  From a
+source build (route 2), any current checkout works.
 
 Wire it as a stdio server for `.m9` files.  Helix
 (`~/.config/helix/languages.toml`):
@@ -257,41 +262,41 @@ Neovim (0.11+):
     vim.lsp.enable('m9lsp')
     vim.filetype.add({ extension = { m9 = 'modula9' } })
 
-A formatter travels the same way: `m9fmt` (`m9c --make -o m9fmt
+A formatter travels the same way.  `m9fmt` (`m9c --make -o m9fmt
 M9fmt`) prints the compiler's own canonical layout with every
-comment kept in place — columns, banners and trailing remarks
-preserved — and `m9fmt --check FILE.m9` exits nonzero when a file is
-not already in that layout, which is the CI-shaped half.  `-w`
-rewrites in place.  Like the language server, it never guesses: a
-file that does not parse is refused with the parser's positions.
+comment kept in place: columns, banners and trailing remarks are
+preserved.  `m9fmt --check FILE.m9` exits nonzero when a file is not
+already in that layout; that is the CI-shaped half.  `-w` rewrites
+in place.  Like the language server, it never guesses: it refuses a
+file that does not parse, with the parser's positions.
 
-The server finds `m9c` on `PATH` (or `$M9LSP_M9C` names one), and
-the compiler's own search rules apply — `$M9LIBRARY`, the installed
-library, and the checked file's directory — so a file whose imports
+The server finds `m9c` on `PATH`, or `$M9LSP_M9C` names one.  The
+compiler's own search rules apply: `$M9LIBRARY`, the installed
+library, and the checked file's directory.  So a file whose imports
 sit beside it needs no configuration at all.  Checks run against
 the file on disk: save to see fresh diagnostics.  In VS Code, keep
-using the extension above; it already has hovers and completion,
+using the extension above.  It already has hovers and completion,
 which the server does not yet.
 
 ## Working with an AI assistant
 
 The top of this chapter said M9 is a good language to have an AI
 write for you.  It is also a language an AI has to be told about,
-because M9 reads like Modula-2 and a model writes what it knows —
-`<>` for not-equal, `'it''s'` for an apostrophe, an import list it
-assumes carries over from the definition — and the checker refuses
-every one of them.  The compiler's repository ships two
+because M9 reads like Modula-2 and a model writes what it knows.  It
+writes `<>` for not-equal, `'it''s'` for an apostrophe, and an import
+list it assumes carries over from the definition.  The checker
+refuses every one of them.  The compiler's repository ships two
 [Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
-for exactly this: `m9`, the short list of what a Pascal or Modula-2
-hand gets wrong in M9, each item pointing at the document that
-settles it; and `m9-lookup`, the procedure for finding what already
-exists before writing it, by asking the compiler (`m9c --json`)
-rather than remembering.  Copy the two directories into your
-project's `.claude/skills/` and Claude Code loads them whenever a
-`.m9` file is written or diagnosed.  They restate no part of the
-language and carry no list of library names — both would drift —
-and point instead at the report, `docs/modules/`, the probes and
-the museum, which the compiler's own gates keep true.
+for exactly this.  `m9` is the short list of what a Pascal or
+Modula-2 hand gets wrong in M9, each item pointing at the document
+that settles it.  `m9-lookup` is the procedure for finding what
+already exists before writing it, by asking the compiler
+(`m9c --json`) rather than remembering.  Copy the two directories into
+your project's `.claude/skills/`, and Claude Code loads them
+whenever a `.m9` file is written or diagnosed.  They restate no part
+of the language and carry no list of library names, because both
+would drift.  They point instead at the report, `docs/modules/`, the
+probes and the museum, which the compiler's own gates keep true.
 
 ## Checking the installation
 

@@ -2,19 +2,19 @@
 
 Scientific data arrives as text files with conventions, and the
 conventions are facts about the FILE, not properties a reader
-should guess.  M9's CSV reader refuses to infer: the caller
-declares each column's kind — real, integer, timestamp with a named
-layout, text, or skip — and declares the file's missing-value
-convention.  For comparison: handed a real flux-network file, a
-fast modern dataframe library scanned the first thousand rows,
-decided a column was integer, and stopped a hundred kilobytes in
-when `-2.03` arrived.  The column was never integer; the file just
-opens with round numbers.  Inference is a bet about the rows you
-have not read yet.
+should guess.  M9's CSV reader refuses to infer.  The caller
+declares each column's kind (real, integer, timestamp with a named
+layout, text, or skip) and declares the file's missing-value
+convention.  Compare a fast modern dataframe library, handed a real
+flux-network file.  It scanned the first thousand rows, decided a
+column was integer, and stopped a hundred kilobytes in when `-2.03`
+arrived.  The column was never integer; the file just opens with
+round numbers.  Inference is a bet about the rows you have not read
+yet.
 
 The data for this chapter is a half-hour temperature series with
-one gap, marked `-9999` — the file's own convention, stated in its
-documentation, declared by the caller:
+one gap, marked `-9999`.  That is the file's own convention, stated
+in its documentation and declared by the caller:
 
 ```csv data/obs.csv
 TIMESTAMP,TA
@@ -31,10 +31,10 @@ TIMESTAMP,TA
 ```m9 C5Csv.m9
 MODULE C5Csv ;
 
-(* Chapter 5.  Reading data: the caller DECLARES what each column
-   is; nothing is inferred from the first thousand rows.  The missing
-   value is stated too, and becomes NaN -- which floats carry
-   honestly and conversions refuse.
+(* Chapter 5 reads data.  The caller DECLARES what each column is;
+   nothing is inferred from the first thousand rows.  The missing
+   value is stated too, and becomes NaN, which floats carry honestly
+   and conversions refuse.
 
    The pool rule (docs/pools.md): storage that outlives a call takes
    the pool as a parameter, so "who frees this?" is answered in the
@@ -122,41 +122,41 @@ mean TA 2.300 degC
 
 Walk the pipeline:
 
-- **`opt.missing := -9999.0`** — the declared gap value becomes NaN
+- **`opt.missing := -9999.0`**: the declared gap value becomes NaN
   on parse.  NaN is the honest in-band representation for "no
-  measurement": floats carry it, every statistic refuses it
-  (chapter 6), and the one comparison it satisfies — `x # x`,
-  since NaN is the only value not equal to itself — makes the
-  valid-data filter a single visible line.
-- **`Csv.SetStamp (t, 0, Csv.StampYmdHm)`** — the timestamp layout
-  is named, not sniffed, and parses into `Time.Instant`: seconds
+  measurement": floats carry it, and every statistic skips it and
+  counts it out (chapter 6).  It satisfies one comparison, `x # x`, since NaN is
+  the only value not equal to itself.  That makes the valid-data
+  filter a single visible line.
+- **`Csv.SetStamp (t, 0, Csv.StampYmdHm)`**: the timestamp layout
+  is named, not sniffed, and parses into `Time.Instant`, seconds
   since the Unix epoch, UTC.  A time axis that is secretly local
   time is an hour of silent error for every user who assumed
-  otherwise; time zones are facts, so the API makes them explicit.
-- **`F64 (temp [i])`** — the file's reals are F32 (they have seven
-  significant digits at most); statistics run in F64.  The widening
-  is written, because chapter 2.
-- **`Fmt.Fixed (…, 3)`** — no pool: a formatted number is read once
-  and printed, and the compiler places it in the caller's frame
-  (chapter 4).  The pool goes where storage is KEPT — the parsed
-  table — which brings us to the last idea.
+  otherwise.  Time zones are facts, so the API makes them explicit.
+- **`F64 (temp [i])`**: the file's reals are F32 (they have seven
+  significant digits at most), and statistics run in F64.  The
+  widening is written, because of chapter 2.
+- **`Fmt.Fixed (…, 3)`** takes no pool: a formatted number is read
+  once and printed, and the compiler places it in the caller's frame
+  (chapter 4).  The pool goes where storage is KEPT, in the parsed
+  table.  That brings us to the last idea.
 
 ## The pool answers "who frees this?"
 
-Every M9 allocation is carved from a named POOL, and a procedure
-that keeps storage beyond its own frame takes the pool as a
-parameter.  The rule of thumb, measured across this repository's
-whole library: **the pool parameter appears exactly when the
-allocation outlives the call.**  A signature with a pool is telling
-you the result lives on and who owns it; a signature without one is
-a promise that nothing was kept.  This program declares one pool at
-the top; everything it carves — the parsed table, the stamps —
-dies with the program, and there is no free() to forget and no
-garbage collector to wonder about.
+Every M9 allocation has an owner.  It is the procedure's own frame
+unless the code names a POOL (chapter 4).  A procedure that keeps
+storage beyond its own frame takes the pool as a parameter.  The rule of thumb, measured across this repository's
+whole library, is this: **the pool parameter appears exactly when
+the allocation outlives the call.**  A signature with a pool is
+telling you the result lives on and who owns it.  A signature
+without one promises that nothing was kept.  This program declares
+one pool at the top.  Everything it carves, the parsed table and
+the stamps, dies with the program.  There is no free() to forget
+and no garbage collector to wonder about.
 
 On the writing side, `Io` deals in whole files (`WriteFile`,
-`ReadFile`): a partial-read API is an invitation to the truncation
-bugs this repository has already paid for, so the boundary is one
-call, checked.
+`ReadFile`).  A partial-read API invites the truncation bugs this
+repository has already paid for, so the boundary is one call,
+checked.
 
 [← Previous: memory, pools and strings](04-memory.md) · [Next: simple math and statistics →](06-math-stats.md)

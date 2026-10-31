@@ -1,37 +1,37 @@
 # 8 — Data through zarr
 
-Large scientific arrays live in chunked stores: the array is cut
-into fixed-size chunks, each compressed and addressable by its
+Large scientific arrays live in chunked stores.  The store cuts the
+array into fixed-size chunks, each compressed and addressable by its
 coordinates, with small JSON metadata describing shape, dtype and
-fill.  Zarr is the convention the ICOS Carbon Portal serves its
-data with, over plain HTTPS — and `ZarrStore` is a complete reader
-for it: metadata parsed and validated at open, blosc decompression,
-a chunk cache, and every index checked against the shape the store
-itself declared.
+fill.  Zarr is the convention the ICOS Carbon Portal serves its data
+with, over plain HTTPS.  `ZarrStore` is a complete reader for it:
+metadata parsed and validated at open, blosc decompression, a chunk
+cache, and every index checked against the shape the store itself
+declared.
 
 The store in this chapter is a local replica of the repository's
-test store, and the sandbox that runs these examples online has no
-network on purpose -- so the replica is served *inside* the
-sandbox, on its own private loopback, started beside your cell and
-gone when it exits.  Real chunked data, zero egress, and a tutorial
+test store.  The sandbox that runs these examples online has no
+network on purpose.  So the replica is served *inside* the sandbox,
+on its own private loopback, started beside your cell and gone when
+it exits.  You get real chunked data, zero egress, and a tutorial
 that cannot fail with the portal's next maintenance window.  Run
 locally, serve the store yourself:
-`python3 -m http.server 18931 --directory <dir-holding-co2.zarr>`.  Against a live portal the only change is
-the URL — the TLS client underneath verifies certificate and
-hostname, proven against the standard set of deliberately broken
-hosts.
+`python3 -m http.server 18931 --directory <dir-holding-co2.zarr>`.
+Against a live portal the only change is the URL.  The TLS client
+underneath verifies certificate and hostname, proven against the
+standard set of deliberately broken hosts.
 
 ```m9 C8Zarr.m9
 MODULE C8Zarr ;
 
 (* Chapter 8.  Zarr over HTTP: a chunked array store is opened by
-   URL, sliced by index, and every byte that arrives is checked --
+   URL and sliced by index, and every byte that arrives is checked:
    the shape from .zarray, the compression, the fill value.  The
    store here is local (the sandbox has no network by design); the
    same call with a portal URL is how the ICOS data is read.
 
-   Ownership: Open answers a SHARED handle and Close consumes it --
-   the checker refuses a use after Close, so a leaked store is not a
+   Ownership: Open answers a SHARED handle and Close consumes it.
+   The checker refuses a use after Close, so a leaked store is not a
    silent bug but an uncompilable one.                              *)
 
 IMPORT Io ;
@@ -107,32 +107,31 @@ co2[10,5]  is a gap (deleted chunk, NaN fill)
 Three things are new here, and each is the language keeping a
 promise from an earlier chapter:
 
-- **The gap is DATA.**  Chunk (2,1) of this store was deleted;
-  zarr's rule is that a missing chunk reads as the declared fill
-  value, NaN here.  The read succeeds, the gap arrives as NaN, and
-  chapter 5's `x = x` test spots it.
+- **The gap is DATA.**  Chunk (2,1) of this store was deleted.  By
+  zarr's rule, a missing chunk reads as the declared fill value, NaN
+  here.  The read succeeds, the gap arrives as NaN, and chapter 5's
+  `x = x` test spots it.
 - **Ownership is in the signature.**  `Open` answers a
-  `SHARED PTR Store` — a counted handle — and `Close (OWN s)`
-  CONSUMES it: after the `Close` line, any further use of `st` is
-  a compile error naming what killed it and where.  The
-  use-after-close bug class is not tested away here; it is
-  uncompilable.
+  `SHARED PTR Store`, a counted handle, and `Close (OWN s)` CONSUMES
+  it.  After the `Close` line, any further use of `st` is a compile
+  error naming what killed it and where.  The use-after-close bug
+  class is not tested away here; it is uncompilable.
 - **The foreign boundary is declared.**  Blosc and the socket layer
   are C libraries, bound in `FOR "C"` units where every procedure
   states its C name and its thread discipline (`[SERIAL]` /
-  `[REENTRANT]`) — the compiler emits the serialisation, so a
+  `[REENTRANT]`).  The compiler emits the serialisation, so a
   global-state C library cannot be raced by accident.  The honest
-  consequence: linking this program names that library -- and the
+  consequence: linking this program names that library.  The
   foreign unit inside ZarrStore does the naming (`LINK
-  "-l:libblosc.so.1"`), so with the store served locally
+  "-l:libblosc.so.1"`).  So with the store served locally
   (`python3 -m http.server 18931 --directory /tmp/m9stores`) the
   build is one line:
 
       m9c -o co2 C8Zarr.m9
 
-  `m9c` is deliberately not a build system; what it DOES supply by
-  default (include paths, the module closure, the runtime, the
-  libraries the closure's foreign units name) it will show you with
-  `-v`.
+  `m9c` is deliberately not a build system.  It will show you with
+  `-v` what it DOES supply by default: include paths, the module
+  closure, the runtime, the libraries the closure's foreign units
+  name.
 
 [← Previous: timeseries](07-timeseries.md) · [Next: preparing data for plotting →](09-plotting.md)

@@ -1,10 +1,12 @@
 MODULE C10Icos ;
 
-(* Chapter 10.  The capstone: nine years of real hourly CO2 from the
-   ICOS station Hyltemossa (HTM, southern Sweden), measured 150 m
-   above the forest, read straight out of the Carbon Portal's zarr
-   service and decomposed with ordinary least squares into a linear
-   trend plus annual and semiannual harmonics -- a Fourier fit:
+IMPORT Text ;
+
+(* Chapter 10 is the capstone.  It reads nine years of real hourly
+   CO2 from the ICOS station Hyltemossa (HTM, southern Sweden),
+   measured 150 m above the forest, straight out of the Carbon
+   Portal's zarr service.  Ordinary least squares decomposes it into
+   a linear trend plus annual and semiannual harmonics, a Fourier fit:
 
      co2(t) ~ c0 + c1 t + c2 cos 2pi t + c3 sin 2pi t
                        + c4 cos 4pi t + c5 sin 4pi t
@@ -33,9 +35,9 @@ IMPORT ZarrStore ;
 
 CONST
   Lo     = 2017.25 ;         (* the fit window: 2017-2025.  The live
-                                store grows past it; the window is
-                                what makes a live run comparable to
-                                the recorded one *)
+                                store grows past it.  The window makes
+                                a live run comparable to the recorded
+                                one. *)
   Hi     = 2026.0 ;
   Mid    = 2021.5 ;          (* centre time: a well-behaved matrix *)
   Months = 105 ;             (* 1/12-year bins across the window   *)
@@ -46,7 +48,8 @@ CONST
 
 PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i: I64) : F64
   RAISES ZarrStore.StoreError =
-  (* element i of a 1-D array, checked against the store's shape.
+  (* At answers element i of a 1-D array, checked against the
+     store's shape.
 
        arr -- VAR because a read can grow the chunk cache.
        i   -- 0-based; out of range raises IndexError, always.      *)
@@ -58,8 +61,9 @@ END At ;
 
 PROCEDURE AtI (VAR arr: PTR ZarrStore.Array ; i: I64) : I64
   RAISES ZarrStore.StoreError, ValueRange =
-  (* the integer twin: ValueRange is the store handing back
-     something an I64 cannot hold -- declared, because chapter 2. *)
+  (* AtI is the integer twin.  It raises ValueRange when the store
+     hands back something an I64 cannot hold.  The heading declares
+     it, because chapter 2. *)
 VAR ix : ARRAY 1 OF I64 ;
 BEGIN
   ix [0] := i ;
@@ -68,7 +72,7 @@ END AtI ;
 
 PROCEDURE Model (RO c: SLICE OF F64 ; t: F64) : F64
   RAISES ValueRange, Overflow, IndexError =
-  (* the fitted curve at one time.
+  (* Model answers the fitted curve at one time.
 
        c -- the six coefficients, in the order the design matrix
             declared them: constant, slope, annual cos/sin,
@@ -188,7 +192,7 @@ BEGIN
                       'year', 'CO2 (umol/mol)') ;
   Io.WriteFile ('/tmp/htm.svg', svg) ;
   Io.Write ('wrote /tmp/htm.svg, ') ;
-  Io.WriteI64 (LEN (svg)) ;
+  Io.WriteI64 (Text.BLen (svg)) ;
   Io.WriteLine (' bytes')
 EXCEPT
 | ZarrStore.StoreError :

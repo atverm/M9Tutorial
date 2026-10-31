@@ -1,7 +1,7 @@
 MODULE C6Nan ;
 
 (* Chapter 6.  A NaN in a sample is a MISSING VALUE: the mean of
-   [1, NaN, 3] is 2, over the two values that are there -- and the
+   [1, NaN, 3] is 2, over the two values that are there.  The
    library says how many that was.  A skip nobody can see changes n
    behind your back; a skip with its count beside it is a statement
    about your data.  A sample of nothing but gaps is not answered

@@ -1,10 +1,10 @@
 MODULE X2Raises ;
 
 (* EXPECT-ERROR: unhandled RAISES ValueRange *)
-(* Chapter 2, a program that must NOT compile.  A checked conversion
-   can raise ValueRange, so a procedure that converts must either
-   handle it or declare it in RAISES -- the accounting is exhaustive,
-   which is what makes a signature's RAISES list trustworthy.       *)
+(* Chapter 2 shows a program that must NOT compile.  A checked
+   conversion can raise ValueRange, so a procedure that converts
+   must either handle it or declare it in RAISES.  The accounting is
+   exhaustive, and that makes a signature's RAISES list trustworthy. *)
 
 IMPORT Io ;
 

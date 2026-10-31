@@ -1,20 +1,22 @@
 MODULE C17Pipe ;
 
-(* Chapter 17: living in the real world.
+IMPORT Text ;
+
+(* Chapter 17 is about living in the real world.
 
    A program that only ever talks to itself is a demo.  A useful one
    takes PARAMETERS from whoever ran it and DRIVES OTHER PROGRAMS,
    then reads back what they said.  This one counts word frequencies
-   the way a shell line would -- sort, then uniq -c, then sort again
-   -- but from M9, and without a shell: each stage is its OWN program,
-   run through System.Exec, fed the previous stage's output on its
-   stdin and INSISTED to have succeeded.
+   the way a shell line would: sort, then uniq -c, then sort again.
+   It does so from M9, and without a shell.  Each stage is its OWN
+   program, run through System.Exec, fed the previous stage's output
+   on its stdin and INSISTED to have succeeded.
 
-   Three things this chapter is really about:
+   This chapter is really about three things:
 
    * A stage's output comes back as a VALUE, and so does its status.
-     System.Exec answers a Result -- the exit status, everything the
-     program wrote to stdout, and everything it wrote to stderr -- so
+     System.Exec answers a Result: the exit status, everything the
+     program wrote to stdout, and everything it wrote to stderr.  So
      the pipe between two tools is an M9 string, not a temp file, and
      a stage that FAILED is a status you look at rather than a thing
      you hope did not happen.  A shell one-liner hides the middle of
@@ -31,9 +33,9 @@ MODULE C17Pipe ;
 
    * A parameter is a DECISION, not an accident.  The count of rows
      to show is a NAMED option, --top=N, the convention System.Value
-     defines -- never a bare number that could be mistaken for a
-     filename -- and a value that is not a count is reported before
-     the default is used.
+     defines.  It is never a bare number that could be mistaken for a
+     filename.  A value that is not a count is reported before the
+     default is used.
 
    With no arguments it shows the top DefaultTop; run it as
    `./c17pipe --top=3` to ask for three.                             *)
@@ -46,9 +48,10 @@ IMPORT Fmt ;
 CONST
   DefaultTop = 5 ;
 
-(* the text to count, fixed so the whole run is reproducible.  A
-   CONST cannot be a `+` expression, so the passage is a procedure
-   that composes its literals into HEAP and answers the whole. *)
+(* Passage answers the text to count, fixed so the whole run is
+   reproducible.  A CONST cannot be a `+` expression, so the passage
+   is a procedure that composes its literals into HEAP and answers
+   the whole. *)
 PROCEDURE Passage () : STR =
 BEGIN
   RETURN
@@ -72,9 +75,9 @@ BEGIN
   RETURN c
 END Lower ;
 
-(* the passage as one lowercase word per line -- the input a
-   sort | uniq pipeline wants.  Anything that is not a letter is a
-   word break. *)
+(* WordsOf answers the passage as one lowercase word per line, the
+   input a sort | uniq pipeline wants.  Anything that is not a letter
+   is a word break. *)
 PROCEDURE WordsOf (RO text: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
@@ -85,9 +88,9 @@ VAR
 BEGIN
   d := DynStr.New (pool) ;
   inWord := FALSE ;
-  FOR i := 0 TO LEN (text) - 1 DO
-    IF IsLetter (text[i]) THEN
-      DynStr.AppendChar (d, Lower (text[i])) ;
+  FOR i := 0 TO Text.BLen (text) - 1 DO
+    IF IsLetter (Text.BChar (text, i)) THEN
+      DynStr.AppendChar (d, Lower (Text.BChar (text, i))) ;
       inWord := TRUE
     ELSIF inWord THEN
       DynStr.AppendChar (d, 0AC) ;   (* end this word *)
@@ -98,45 +101,45 @@ BEGIN
   RETURN DynStr.View (d)
 END WordsOf ;
 
-(* a non-negative integer that is the WHOLE of s, or -1 if it is
-   not one *)
+(* ParseInt answers a non-negative integer that is the WHOLE of s,
+   or -1 if it is not one. *)
 PROCEDURE ParseInt (RO s: STR) : I64 RAISES IndexError =
 VAR
   i, v : I64 ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN 0 - 1 END ;
+  IF Text.BLen (s) = 0 THEN RETURN 0 - 1 END ;
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF (s[i] < '0') OR (s[i] > '9') THEN RETURN 0 - 1 END ;
-    v := v * 10 + (ORD (s[i]) - ORD ('0'))
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF (I64 (Text.BAt (s, i)) < ORD ('0')) OR (I64 (Text.BAt (s, i)) > ORD ('9')) THEN RETURN 0 - 1 END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - ORD ('0'))
   END ;
   RETURN v
 END ParseInt ;
 
-(* how many rows to show: --top=N, or DefaultTop.  System.Value reads
-   the text after --top= in the options, or answers the default we
-   name here.  A number the parser rejects is reported before the
-   default is used, so a mistyped option is never mistaken for a
-   deliberate omission. *)
+(* TopWanted answers how many rows to show: --top=N, or DefaultTop.
+   System.Value reads the text after --top= in the options, or
+   answers the default we name here.  A number the parser rejects is
+   reported before the default is used, so a mistyped option is
+   never mistaken for a deliberate omission. *)
 PROCEDURE TopWanted () : I64 RAISES ValueRange, IndexError =
 VAR
   s : STR ;
   n : I64 ;
 BEGIN
   s := System.Value ('--top', '') ;
-  IF LEN (s) = 0 THEN RETURN DefaultTop END ;
+  IF Text.BLen (s) = 0 THEN RETURN DefaultTop END ;
   n := ParseInt (s) ;
   IF n >= 0 THEN RETURN n END ;
   Io.ErrLine ('--top is not a count; showing ' + Fmt.I64Str (DefaultTop)) ;
   RETURN DefaultTop
 END TopWanted ;
 
-(* run one pipeline stage: prog with args, fed `input` on its stdin,
-   pinned to LC_ALL=C so the byte ordering does not depend on the
-   machine's locale, and INSISTED to have succeeded.  A stage that
-   exits nonzero stops the whole run, naming its status and whatever
-   it wrote to stderr -- because a pipeline that RAN is not a pipeline
-   that WORKED. *)
+(* Stage runs one pipeline stage: prog with args, fed `input` on its
+   stdin.  It pins the stage to LC_ALL=C so the byte ordering does
+   not depend on the machine's locale, and INSISTS that it succeeded.
+   A stage that exits nonzero stops the whole run, naming its status
+   and whatever it wrote to stderr.  A pipeline that RAN is not a
+   pipeline that WORKED. *)
 PROCEDURE Stage (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
                  RO input: STR) : STR
   RAISES ValueRange, Io.IOError =
@@ -149,15 +152,15 @@ BEGIN
   r := System.Exec (pool, prog, args, input, env) ;
   IF r.status # 0 THEN
     Io.ErrLine (prog + ' exited with status ' + Fmt.I64Str (r.status)) ;
-    IF LEN (r.err) > 0 THEN Io.ErrLine (r.err) END ;
+    IF Text.BLen (r.err) > 0 THEN Io.ErrLine (r.err) END ;
     Io.Halt (1)
   END ;
   RETURN r.out
 END Stage ;
 
 (* uniq -c prints "   COUNT word", the count right-justified in a
-   field of blanks.  Parsing a tool's REAL output -- padded columns
-   and all -- is most of what living in the real world is.  Show the
+   field of blanks.  Most of living in the real world is parsing a
+   tool's REAL output, padded columns and all.  Report shows the
    first `top` rows as a ranked table. *)
 PROCEDURE Report (RO counts: STR ; top: I64)
   RAISES ValueRange, IndexError =
@@ -169,25 +172,25 @@ BEGIN
                 + ' most frequent words in the passage:') ;
   i := 0 ;
   shown := 0 ;
-  WHILE (i < LEN (counts)) AND (shown < top) DO
-    WHILE (i < LEN (counts)) AND (counts[i] = ' ') DO i := i + 1 END ;
+  WHILE (i < Text.BLen (counts)) AND (shown < top) DO
+    WHILE (i < Text.BLen (counts)) AND (Text.BIs (counts, i, ' ')) DO i := i + 1 END ;
     count := 0 ;
-    WHILE (i < LEN (counts)) AND (counts[i] >= '0')
-          AND (counts[i] <= '9') DO
-      count := count * 10 + (ORD (counts[i]) - ORD ('0')) ;
+    WHILE (i < Text.BLen (counts)) AND (I64 (Text.BAt (counts, i)) >= ORD ('0'))
+          AND (I64 (Text.BAt (counts, i)) <= ORD ('9')) DO
+      count := count * 10 + (I64 (Text.BAt (counts, i)) - ORD ('0')) ;
       i := i + 1
     END ;
-    IF (i < LEN (counts)) AND (counts[i] = ' ') THEN i := i + 1 END ;
+    IF (i < Text.BLen (counts)) AND (Text.BIs (counts, i, ' ')) THEN i := i + 1 END ;
     j := i ;
-    WHILE (j < LEN (counts)) AND (counts[j] # 0AC) DO j := j + 1 END ;
+    WHILE (j < Text.BLen (counts)) AND (NOT Text.BIs (counts, j, 0AC)) DO j := j + 1 END ;
     word := SLICE (counts, i, j - i) ;
-    IF LEN (word) > 0 THEN
+    IF Text.BLen (word) > 0 THEN
       shown := shown + 1 ;
       Io.WriteLine ('  ' + Fmt.I64Str (shown) + '. ' + word
                     + '  (' + Fmt.I64Str (count) + ')')
     END ;
     i := j ;
-    IF (i < LEN (counts)) AND (counts[i] = 0AC) THEN i := i + 1 END
+    IF (i < Text.BLen (counts)) AND (Text.BIs (counts, i, 0AC)) THEN i := i + 1 END
   END
 END Report ;
 
@@ -201,8 +204,8 @@ BEGIN
   BEGIN
     top := TopWanted () ;
 
-    (* the passage as one lowercase word per line, built in memory --
-       the input the first stage reads on its stdin *)
+    (* Build the passage as one lowercase word per line, in memory.
+       The first stage reads it on its stdin. *)
     words := WordsOf (Passage ()) ;
 
     none := NEW (pool, STR, 0) ;
@@ -212,11 +215,11 @@ BEGIN
     sortArgs[0] := '-k1,1nr' ;
     sortArgs[1] := '-k2,2' ;
 
-    (* three stages, each its own program, each checked.  The output
-       of one is the stdin of the next -- an M9 string, not a temp
-       file.  The second sort ranks by count (numeric, descending)
-       then by the word, so ties have a defined order and every run
-       is identical down to the byte. *)
+    (* Run three stages, each its own program, each checked.  The
+       output of one is the stdin of the next: an M9 string, not a
+       temp file.  The second sort ranks by count (numeric,
+       descending) then by the word, so ties have a defined order and
+       every run is identical down to the byte. *)
     sorted := Stage (pool, 'sort', none, words) ;
     counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
     ranked := Stage (pool, 'sort', sortArgs, counted) ;

@@ -3,9 +3,9 @@
 Chapter 15 asked whether NEE depends on temperature. This chapter asks
 the questions that come after a model exists: how good is it, compared
 with the alternatives? How sure are we of its coefficients? And do its
-errors behave the way the uncertainty assumed? Three programs, the
-same week of half-hourly fluxes from chapter 14, and three corners of
-the library that came with 0.14: `Stats.Taylor` and
+errors behave the way the uncertainty assumed? It uses three programs,
+the same week of half-hourly fluxes from chapter 14, and three corners
+of the library that came with 0.14: `Stats.Taylor` and
 `Plot.RenderTaylor`, the general linear algebra in `Mat`, and the
 probability distributions in `Stats`. Every number on this page is
 also held to numpy and scipy by the repository's own oracles.
@@ -16,11 +16,11 @@ A model and its observations differ in three ways that a single error
 number blurs together: the model can vary too little or too much, it
 can go up when the observations go down, and it can do both at once.
 Karl Taylor's diagram (2001) separates them. Each comparison becomes
-one point: its distance from the origin is the ratio of the model's
-standard deviation to the observations', its angle is their
-correlation, and its distance from the point marked REF — the
-observations compared with themselves — is the root-mean-square
-difference that is left. One figure holds a whole evaluation.
+one point. Its distance from the origin is the ratio of the model's
+standard deviation to the observations', and its angle is their
+correlation. Its distance from the point marked REF (the observations
+compared with themselves) is the root-mean-square difference that is
+left. One figure holds a whole evaluation.
 
 The "models" here are four predictions anyone could make without a
 model: a straight line on incoming light, a straight line on air
@@ -31,7 +31,9 @@ same time yesterday. Each predicts three fluxes: NEE, sensible heat
 ```m9 C18Taylor.m9
 MODULE C18Taylor ;
 
-(* Chapter 18: how good is a model, in one picture.
+IMPORT Text ;
+
+(* Chapter 18 shows how good a model is, in one picture.
 
    A Taylor diagram places every comparison of a model with its
    observations by two numbers: how much the model VARIES compared
@@ -71,8 +73,9 @@ CONST
                                (* the legend has room for about twelve
                                   characters a name *)
 
-(* the column of that name, declared a 64-bit real before the parse;
-   a file without it stops the program, naming what was missing *)
+(* Real answers the column of that name, declared a 64-bit real
+   before the parse.  A file without it stops the program, naming
+   what was missing. *)
 PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
 VAR c : I64 ;
 BEGIN
@@ -86,8 +89,8 @@ BEGIN
   RETURN c
 END Real ;
 
-(* model 1 and 2: the least-squares line of y on the driver x, and
-   what it says at every x *)
+(* Line is models 1 and 2: the least-squares line of y on the
+   driver x, and what it says at every x. *)
 PROCEDURE Line (RO x, y: SLICE OF F64 ; VAR m: SLICE OF F64)
   RAISES Stats.TooFew, ValueRange, Overflow =
 VAR
@@ -100,8 +103,8 @@ BEGIN
   END
 END Line ;
 
-(* model 3: every half-hour of the day averaged over the days, and
-   that average day repeated *)
+(* MeanDay is model 3: every half-hour of the day averaged over the
+   days, and that average day repeated. *)
 PROCEDURE MeanDay (RO y: SLICE OF F64 ; VAR m: SLICE OF F64)
   RAISES ValueRange =
 VAR
@@ -116,9 +119,9 @@ BEGIN
   END
 END MeanDay ;
 
-(* model 4: the value 24 hours earlier.  The first day has no
-   yesterday, so it is MISSING -- a NaN -- and Stats.Taylor compares
-   the six days where both are present *)
+(* Yesterday is model 4: the value 24 hours earlier.  The first day
+   has no yesterday, so it is MISSING, a NaN.  Stats.Taylor compares
+   the six days where both are present. *)
 PROCEDURE Yesterday (RO y: SLICE OF F64 ; VAR m: SLICE OF F64) =
 VAR i : I64 ;
 BEGIN
@@ -131,14 +134,15 @@ BEGIN
   END
 END Yesterday ;
 
-(* s and blanks after it, to make a column of the table *)
+(* PadTo answers s and blanks after it, to make a column of the
+   table. *)
 PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
 VAR
   pad : STR ;
   i : I64 ;
 BEGIN
   pad := '' ;
-  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  FOR i := Text.BLen (s) TO width - 1 DO pad := pad + ' ' END ;
   RETURN s + pad
 END PadTo ;
 
@@ -207,7 +211,7 @@ BEGIN
   svg := Plot.RenderTaylor ('A week of fluxes against four guesses',
                             ratio, corr, Models, Fluxes) ;
   Io.WriteFile (Figure, svg) ;
-  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (LEN (svg)) + ' bytes')
+  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (Text.BLen (svg)) + ' bytes')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
@@ -266,8 +270,8 @@ red points sit closest to REF, with correlations of 0.94 and 0.90.
 For NEE the mean day does slightly better than light (0.894 against
 0.857), because night-time respiration is not a function of light at
 all, and the mean day knows what the nights look like. Temperature is
-the weakest guess for all three; for NEE it explains less than a fifth
-of the variance, the r² of chapter 15.
+the weakest guess for all three. For NEE it explains less than a
+fifth of the variance, the r² of chapter 15.
 
 **A pattern worth knowing.** In every row the line on light, the line
 on temperature and the mean day have a ratio *exactly* equal to their
@@ -282,21 +286,20 @@ pays for it in correlation, at about 0.76.
 
 **Missing values.** Yesterday has no value for the first day, so
 `Yesterday` writes a NaN there, and `Stats.Taylor` compares only the
-pairs where both values are present — six days, not seven. Nobody had
+pairs where both values are present: six days, not seven. Nobody had
 to remember to cut the first 48 half-hours off both series.
 
 **The caveat.** The two lines and the mean day were fitted to the same
 week they are judged on, which flatters them. A fair evaluation fits
-on one period and tests on another; the program would not change,
+on one period and tests on another. The program would not change,
 only the file.
 
 `RenderTaylor` takes one *row* a model and one *column* a variable,
 and the model and flux names are passed straight from their constant
-tables: `CONST Models = ['light', ...]` is an array whose length is
-its count, indexed with every index checked and lent to an `RO`
-parameter (the report's §2.2.4).
-The legend leaves room for about twelve characters a name, which is
-why the models have short ones.
+tables. `CONST Models = ['light', ...]` is an array whose length is
+its count, indexed with every index checked, and lent to an `RO`
+parameter (the report's §2.2.4). The legend leaves room for about
+twelve characters a name, which is why the models have short ones.
 
 ## A regression as matrices, and the inverse it needs
 
@@ -308,9 +311,11 @@ X b − y as small as possible.
 ```m9 C18Fit.m9
 MODULE C18Fit ;
 
-(* Chapter 18: a regression written as matrices -- net ecosystem
-   exchange on light, temperature and the air's dryness at once --
-   and the inverse a standard error needs.
+IMPORT Text ;
+
+(* Chapter 18 writes a regression as matrices: net ecosystem
+   exchange on light, temperature and the air's dryness at once.  It
+   also takes the inverse a standard error needs.
 
    The model is NEE = b0 + b1 SW + b2 TA + b3 VPD, one ROW of the
    design matrix X a half-hour and one COLUMN a term:
@@ -320,9 +325,9 @@ MODULE C18Fit ;
    Mat.LstSq finds the b that makes X b - y smallest.  The
    uncertainty of b needs the inverse of X'X: its diagonal, times the
    variance of the residuals, is the variance of each coefficient.
-   The same inverse also gives b a second way, the textbook way --
-   b = (X'X)^-1 X'y, the "normal equations" -- and the program
-   compares the two, and says why LstSq does not take that road.
+   The same inverse also gives b a second way, the textbook way:
+   b = (X'X)^-1 X'y, the "normal equations".  The program compares
+   the two, and says why LstSq does not take that road.
 
    Last, a design with one column too many: temperature in degrees
    Celsius AND in kelvin.  The two say the same thing, so no single
@@ -341,7 +346,8 @@ CONST
   Terms = ['intercept', 'SW_IN_F', 'TA_F', 'VPD_F'] ;
   Units = ['umol m-2 s-1', 'per W m-2', 'per degC', 'per hPa'] ;
 
-(* the column of that name, declared a 64-bit real before the parse *)
+(* Real answers the column of that name, declared a 64-bit real
+   before the parse. *)
 PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
 VAR c : I64 ;
 BEGIN
@@ -355,8 +361,8 @@ BEGIN
   RETURN c
 END Real ;
 
-(* the largest difference between two column vectors, relative to
-   the larger of each pair *)
+(* RelDiff answers the largest difference between two column
+   vectors, relative to the larger of each pair. *)
 PROCEDURE RelDiff (a, b: PTR Mat.Matrix) : F64 RAISES ValueRange =
 VAR
   i : I64 ;
@@ -371,14 +377,15 @@ BEGIN
   RETURN worst
 END RelDiff ;
 
-(* s and blanks after it, to make a column of the table *)
+(* PadTo answers s and blanks after it, to make a column of the
+   table. *)
 PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
 VAR
   pad : STR ;
   i : I64 ;
 BEGIN
   pad := '' ;
-  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  FOR i := Text.BLen (s) TO width - 1 DO pad := pad + ' ' END ;
   RETURN s + pad
 END PadTo ;
 
@@ -455,8 +462,8 @@ BEGIN
   b2 := Mat.MulM (pool, xtxInv, Mat.MulM (pool, xt, yv)) ;
   b3 := Mat.Solve (pool, xtx, Mat.MulM (pool, xt, yv)) ;
   Io.WriteLine ('') ;
-  (* an apostrophe in a string: the string goes in double quotes, as
-     M9 strings have no escapes *)
+  (* An apostrophe in a string puts the string in double quotes, as
+     M9 strings have no escapes. *)
   IF RelDiff (b, b2) < 1.0E-8 THEN
     Io.WriteLine ("(X'X)^-1 X'y agrees with LstSq to 8 digits")
   ELSE
@@ -544,7 +551,7 @@ QR factorisation, as `numpy.linalg.lstsq` does. Light dominates
 (t = −28): every 100 W m⁻² of sunshine moves NEE by −3.4 µmol m⁻² s⁻¹,
 which is uptake. With light in the model, temperature's coefficient
 is −0.49 rather than chapter 15's −1.08, because warm hours were also
-bright hours and light now takes its share. VPD — how dry the air is —
+bright hours and light now takes its share. VPD, how dry the air is,
 comes in *positive*: dry air makes leaves close their stomata and take
 up less. Temperature and dryness move together (warm afternoons are
 dry), so their two coefficients are less certain than either would be
@@ -561,12 +568,12 @@ normal equations, and the program computes it that way too, and with
 `Mat.Solve` on XᵀX. Here all three agree to eight digits. They will
 not always. The singular values of X, from `Mat.Svd`, give its
 *condition number*: 3.6 × 10³, which means a solution can lose about
-three and a half of its sixteen digits to rounding. Forming XᵀX
-*squares* it, to 1.3 × 10⁷: seven digits gone. That is harmless here;
-for a design whose condition is 10⁸, XᵀX is at 10¹⁶ and the normal
-equations keep no digits at all, while QR works on X itself and loses
-only what the problem loses. Solve with `LstSq` or `Solve`; invert
-only when the inverse itself is the answer.
+three and a half of its sixteen digits to rounding. The step to XᵀX
+*squares* it, to 1.3 × 10⁷: seven digits gone. That is harmless here.
+For a design whose condition is 10⁸, XᵀX is at 10¹⁶ and the normal
+equations keep no digits at all. QR works on X itself and loses only
+what the problem loses. Solve with `LstSq` or `Solve`; invert only
+when the inverse itself is the answer.
 
 **One column too many.** Add temperature again, in kelvin, and the
 design has five columns that only say four things: the kelvin column
@@ -588,13 +595,13 @@ of the two.
 MODULE C18Dist ;
 
 (* Chapter 18: a confidence interval assumes something about the
-   residuals -- that they are normal -- and this program asks whether
-   they are.
+   residuals: that they are normal.  This program asks whether they
+   are.
 
    The regression is chapter 15's kind, NEE on incoming light.  Its
    95% interval for the slope comes from Student's t.  Then the
    residuals are binned into eight bins that a normal distribution
-   fills EQUALLY -- the bin edges are the normal's own quantiles -- and
+   fills EQUALLY; the bin edges are the normal's own quantiles.
    Pearson's chi-square says how far the counts are from equal.  The
    tails are compared with the normal's too.
 
@@ -617,7 +624,8 @@ CONST
   Trials = 1000 ;
   SeedValue = 20261003 ;       (* a fixed seed: the draws are reproducible *)
 
-(* the column of that name, declared a 64-bit real before the parse *)
+(* Real answers the column of that name, declared a 64-bit real
+   before the parse. *)
 PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
 VAR c : I64 ;
 BEGIN
@@ -631,8 +639,9 @@ BEGIN
   RETURN c
 END Real ;
 
-(* how many of the values fall in each bin: bin k holds the values
-   with exactly k of the (ascending) edges at or below them *)
+(* Counts says how many of the values fall in each bin.  Bin k holds
+   the values with exactly k of the (ascending) edges at or below
+   them. *)
 PROCEDURE Counts (RO z, edges: SLICE OF F64 ; VAR count: SLICE OF I64) =
 VAR i, j, k : I64 ;
 BEGIN
@@ -646,9 +655,9 @@ BEGIN
   END
 END Counts ;
 
-(* the sample standardised by its own normal fit, binned, and
-   Pearson's chi-square of the counts against equal expectations,
-   with its p-value *)
+(* Test standardises the sample by its own normal fit, bins it, and
+   answers Pearson's chi-square of the counts against equal
+   expectations, with its p-value. *)
 PROCEDURE Test (RO xs, edges: SLICE OF F64 ; VAR z: SLICE OF F64 ;
                 VAR count: SLICE OF I64 ; VAR x2, p: F64)
   RAISES Stats.TooFew, Faults.BadArg, ValueRange, Overflow =
@@ -668,7 +677,7 @@ BEGIN
   p := 1.0 - Stats.Chi2Cdf (x2, F64 (LEN (count) - 1 - Fitted))
 END Test ;
 
-(* n marks, a bar of the text histogram *)
+(* Bar answers n marks, a bar of the text histogram. *)
 PROCEDURE Bar (n: I64) : STR =
 VAR
   s : STR ;
@@ -754,7 +763,7 @@ BEGIN
     FOR i := 0 TO n - 1 DO draw[i] := Stats.Normal (st) END ;
     Test (draw, edges, z, count, x2, p) ;
     IF p < 0.05 THEN cries := cries + 1 END ;
-    (* the same statistic read as if nothing had been fitted *)
+    (* Read the same statistic as if nothing had been fitted. *)
     IF 1.0 - Stats.Chi2Cdf (x2, F64 (Bins - 1)) < 0.05 THEN loose := loose + 1 END
   END ;
   Io.WriteLine ('') ;
@@ -827,20 +836,20 @@ residuals are not normal. The upper tail is heavier than a normal's
 too (2.28 standard deviations at the 97.5th percentile, against
 1.96).
 
-What that means for the interval: with 336 half-hours the slope's
-interval is still roughly right, because a mean of many errors is
-close to normal whatever they are. But the residuals point to a model
-that is missing something, the day/night difference, and that is
-worth more than the interval.
+Here is what that means for the interval. With 336 half-hours the
+slope's interval is still roughly right, because a mean of many
+errors is close to normal whatever they are. But the residuals point
+to a model that is missing something, the day/night difference, and
+that is worth more than the interval.
 
 **Testing the test.** A test is worth only as much as its behaviour
 when nothing is wrong. The program draws 1,000 samples that *are*
 normal, from a seeded stream (reproducible to the bit), and applies
 the same test. At the 5% level it should reject about 50 of them. With
-five degrees of freedom — eight bins, minus one, minus the two
-parameters fitted — it rejects 65; with seven, as if nothing had been
+five degrees of freedom (eight bins, minus one, minus the two
+parameters fitted) it rejects 65. With seven, as if nothing had been
 fitted, it rejects 23. The truth lies between, as Chernoff and
-Lehmann showed in 1954: the mean and spread were fitted to the raw
+Lehmann showed in 1954. The mean and spread were fitted to the raw
 values, not to the binned counts, and the usual rule of subtracting
 one degree of freedom for each fitted parameter is only approximately
 right then. So the test as written is slightly liberal, about 6.5%
@@ -857,9 +866,9 @@ otherwise). The two ways of solving the regression are compared, and
 the condition number says when they would stop agreeing. A design
 with no unique answer is refused by name, not answered quietly. And
 a statistical test is run on data where the right answer is known,
-to see how often it is wrong. None of this is special to M9, but in
-M9 the failures that would make these checks necessary — a NaN taken
-for a number, a singular matrix answered anyway, an exception nobody
-handled — are ones the compiler will not let a program ignore.
+to see how often it is wrong. None of this is special to M9. But some
+failures would make these checks necessary: a NaN taken for a
+number, a singular matrix answered anyway, an exception nobody
+handled. In M9 the compiler will not let a program ignore them.
 
 [← Previous: living in the real world](17-real-world.md)

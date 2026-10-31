@@ -1,9 +1,9 @@
 MODULE C16Mat ;
 
 (* Chapter 16: computation goes faster with threads when there are
-   cores to run them on -- a matrix product and a matrix inversion,
-   each done once on one thread and once on eight, and the two
-   answers compared BIT FOR BIT.
+   cores to run them on.  This program does a matrix product and a
+   matrix inversion, each once on one thread and once on eight, and
+   compares the two answers BIT FOR BIT.
 
    The shape of every threaded computation here is the same:
      * the work is cut into bands that touch DISJOINT parts of the
@@ -30,8 +30,8 @@ CONST
   Bands = 8 ;
 
 TYPE
-  (* the finish line and the band counter -- everything the workers
-     share AND change lives in the monitor, and nowhere else *)
+  (* the finish line and the band counter.  Everything the workers
+     share AND change lives in the monitor, and nowhere else. *)
   Work = MONITOR RECORD
     n : I64 ;                  (* workers finished *)
     next : I64 ;               (* the next band to claim *)
@@ -91,8 +91,8 @@ BEGIN
   IF k < Bands THEN
     r0 := Lo (k) ; r1 := Hi (k) ;
     BEGIN
-      (* my rows of A, then the whole of B: the same MulM the serial
-         version calls, on a slice of the problem *)
+      (* Take my rows of A, then the whole of B.  This is the same
+         MulM the serial version calls, on a slice of the problem. *)
       band := Mat.New (wpool, r1 - r0, N) ;
       FOR r := 0 TO r1 - r0 - 1 DO
         FOR c := 0 TO N - 1 DO
@@ -100,7 +100,7 @@ BEGIN
         END
       END ;
       p := Mat.MulM (wpool, band, j.b) ;
-      (* into MY rows of the shared product, and no one else's *)
+      (* Copy into MY rows of the shared product, and no one else's. *)
       FOR r := 0 TO r1 - r0 - 1 DO
         FOR c := 0 TO N - 1 DO
           Mat.Set (j.prod, r0 + r, c, Mat.Get (p, r, c))
@@ -156,7 +156,8 @@ BEGIN
   RETURN TRUE
 END Identical ;
 
-(* how far a product is from the identity, as a single number *)
+(* FarFromIdentity says how far a product is from the identity, as
+   a single number. *)
 PROCEDURE FarFromIdentity (m: PTR Mat.Matrix) : F64 =
 VAR
   r, c : I64 ;
@@ -185,8 +186,8 @@ VAR
 
 BEGIN
   BEGIN
-    (* two matrices with a pattern rather than random numbers, so the
-       whole run is reproducible with no seed to carry *)
+    (* Fill two matrices with a pattern rather than random numbers,
+       so the whole run is reproducible with no seed to carry. *)
     a := Mat.New (pool, N, N) ;
     b := Mat.New (pool, N, N) ;
     FOR r := 0 TO N - 1 DO
@@ -210,8 +211,8 @@ BEGIN
     AwaitAll (mj.w, Bands) ;
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
-    (* timings only when asked (any argument): a number that changes
-       from run to run has no place in gated output *)
+    (* Report timings only when asked (any argument).  A number that
+       changes from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
       Io.ErrLine ('product: serial ' + Fmt.Fixed (serial, 3) + ' s, '
                   + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)

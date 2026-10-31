@@ -1,17 +1,17 @@
 # 6 — Simple math and statistics
 
 `Stats` is the library this project uses for its own science, and
-its numbers come with a pedigree: every procedure is gated against
-numpy and scipy — the p-values digit for digit — with the expected
-values checked into the repository, because a gate that regenerates
+its numbers come with a pedigree.  Every procedure is gated against
+numpy and scipy, the p-values digit for digit.  The expected values
+are checked into the repository, because a gate that regenerates
 what it compares against cannot fail.  When the tutorial prints a
 p-value below, that number has an oracle behind it.
 
 ```m9 C6Stats.m9
 MODULE C6Stats ;
 
-(* Chapter 6.  Statistics with real p-values, verified against
-   scipy digit for digit in the library's own gate -- which is why a
+(* Chapter 6 computes statistics with real p-values.  The library's
+   own gate verifies them against scipy digit for digit, so a
    tutorial can print them without hedging.  Two synthetic samples:
    y depends on x almost linearly, and the two groups differ.       *)
 
@@ -88,20 +88,21 @@ Welch t   -5.5549
 p         0.000242
 ```
 
-What the library gives you, in the order a working analysis meets
-them: moments (`Mean`, `Std`, and the population forms), order
-statistics (`Median`, `Percentile` — numpy's linear interpolation
-rule, so your quartiles match your colleague's notebook), a normal
-fit, least-squares regression with scipy.linregress's five numbers,
-and both t-tests (`TTest2` is Welch's — unequal variances assumed,
-which is the safe default for real measurements).  The p-values are
-real two-sided probabilities computed through the incomplete beta
-function, not lookup-table approximations.
+The library gives you, in the order a working analysis meets them:
+moments (`Mean`, `Std`, and the population forms), order statistics
+(`Median`, `Percentile`), a normal fit, least-squares regression
+with scipy.linregress's five numbers, and both t-tests.
+`Percentile` follows numpy's linear interpolation rule, so your
+quartiles match your colleague's notebook.  `TTest2` is Welch's: it
+assumes unequal variances, which is the safe default for real
+measurements.  The p-values are real two-sided probabilities
+computed through the incomplete beta function, not lookup-table
+approximations.
 
 For reproducible synthetic data, `Stats.Seed` gives a deterministic
 `Stream` with uniform, integer, normal, exponential and log-normal
-draws — bit-for-bit reproducible, seed in, same sequence out, on
-every machine.
+draws.  The draws are bit-for-bit reproducible: seed in, same
+sequence out, on every machine.
 
 ## The NaN policy, and why it is a policy
 
@@ -112,7 +113,7 @@ reaches a statistic — and when a sample is nothing but gaps?
 MODULE C6Nan ;
 
 (* Chapter 6.  A NaN in a sample is a MISSING VALUE: the mean of
-   [1, NaN, 3] is 2, over the two values that are there -- and the
+   [1, NaN, 3] is 2, over the two values that are there.  The
    library says how many that was.  A skip nobody can see changes n
    behind your back; a skip with its count beside it is a statement
    about your data.  A sample of nothing but gaps is not answered
@@ -152,20 +153,20 @@ mean = 2.000 over 2 of 3 values
 nothing but gaps: 0 values, and a mean needs 1
 ```
 
-The gap is skipped, and counted out.  There are two answers a
-library can give here that someone regrets: a NaN mean (correct
-IEEE, useless science), and the silently "helpful" skip, which
-changes n without telling you and turns "a third of my sample is
-missing" into a confident narrow confidence interval.  `Stats` gives
-neither.  It takes every statistic over the values that are there —
-measured series have gaps, and a mean that refuses them is only ever
-called behind a filter someone wrote by hand — and it puts the count
-in your hands: `Stats.Count (xs)` beside a mean, `n` in the answer of
-a regression, a fit or a test, `Stats.RollingCount` beside a rolling
-mean.  For two samples taken together a *pair* counts when both its
+The gap is skipped, and counted out.  A library can give two answers
+here that someone regrets.  One is a NaN mean (correct IEEE, useless
+science).  The other is the silently "helpful" skip, which changes n
+without telling you.  It turns "a third of my sample is missing"
+into a confident narrow confidence interval.  `Stats` gives neither.
+It takes every statistic over the values that are there.  Measured
+series have gaps, and a mean that refuses them is only ever called
+behind a filter someone wrote by hand.  And it puts the count in
+your hands: `Stats.Count (xs)` beside a mean, `n` in the answer of a
+regression, a fit or a test, `Stats.RollingCount` beside a rolling
+mean.  For two samples taken together, a *pair* counts when both its
 values are present.  And when nothing is left to count, the answer
 is not a NaN but a refusal by name, `TooFew`, carrying the number it
-found — the second line above.
+found.  The second line above shows it.
 
 So the rule for your own code is one line long: **print n beside
 every statistic of measured data.**  The library will always tell
@@ -178,17 +179,17 @@ wanted.  Its bits are the ones numpy, Python and C's `NAN` use.
 its sign bit set, a different bit pattern from numpy's, which shows
 when a file M9 wrote is compared with one Python wrote.
 
-Having a name for NaN invites the test everybody writes first:
+A name for NaN invites the test everybody writes first:
 
 ```m9 X6NanEq.m9
 MODULE X6NanEq ;
 
 (* EXPECT-ERROR: no '=' with NaN *)
-(* Chapter 6, a program that must NOT compile.  The test everybody
-   writes first for a missing value: is x NaN?  Written with '=' it
-   is never TRUE -- a NaN is unequal to everything, itself included --
-   so the gap it was meant to catch goes straight through.  The
-   checker refuses the comparison and names the test that works.    *)
+(* Chapter 6 shows a program that must NOT compile.  Everybody
+   writes this test first for a missing value: is x NaN?  Written
+   with '=' it is never TRUE.  A NaN is unequal to everything, itself
+   included, so the gap it was meant to catch goes straight through.
+   The checker refuses the comparison and names the test that works. *)
 
 IMPORT Io ;
 
@@ -205,16 +206,16 @@ X6NanEq.m9:16:8: X6NanEq body: no '=' with NaN: no comparison with NaN is ever T
 ```
 
 A NaN is unequal to everything, itself included, so `x = NaN` is
-never TRUE, and the gap it was written to catch would go straight
+never TRUE.  The gap it was written to catch would go straight
 through.  The checker refuses every comparison with `NaN` and names
 the question that works: `Math.IsNaN (x)`.  (`x # x` is TRUE exactly
 when `x` is a NaN, which is the same test written as a riddle.)
 
 *(Until 0.14 a NaN in a sample raised `ValueRange`, and skipping was
-the caller's loop — chapter 5's filter is exactly that loop, and it
+the caller's loop.  Chapter 5's filter is exactly that loop, and it
 still works.  The rule changed because the loop hid the very thing
-the refusal was meant to keep in view: what keeps it in view now is
-the count.)*
+the refusal was meant to keep in view.  The count keeps it in view
+now.)*
 
 One more time: a checked build runs within a few percent of the
 same code with every check stripped.  A language does not have to

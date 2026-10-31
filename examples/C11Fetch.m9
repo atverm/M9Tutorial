@@ -1,17 +1,17 @@
 MODULE C11Fetch ;
 
-(* Chapter 11: fetching eight files at once, and getting the same
-   answer as fetching them one at a time.
+(* Chapter 11 fetches eight files at once, and gets the same answer
+   as fetching them one at a time.
 
    Build (the store server is started for you when this runs in the
    tutorial; locally, serve examples/data on 18931):
 
      m9c -o c11fetch C11Fetch.m9
 
-   Everything a worker writes, it writes AT ITS OWN INDEX, so the
-   answer cannot depend on which download finished first -- and the
-   sequential pass below proves it by agreeing with the concurrent
-   one, byte for byte.                                              *)
+   Each worker writes everything AT ITS OWN INDEX, so the answer
+   cannot depend on which download finished first.  The sequential
+   pass below proves it by agreeing with the concurrent one, byte
+   for byte.                                                        *)
 
 IMPORT Http ;
 IMPORT Io ;
@@ -24,16 +24,16 @@ CONST
 TYPE
   (* EVERYTHING THE WORKERS SHARE AND CHANGE LIVES HERE.  A MONITOR
      RECORD's fields are reached only through procedures bound to it,
-     and those hold its lock -- which is why the two bound procedures
+     and those hold its lock.  That is why the two bound procedures
      below are SHORT and the fetching is not in them.
 
      Both fields earn their place.  `n` is the finish line.  `next` is
-     the next page to claim, and it was a plain field of Job in the
-     first version of this example -- so Claim read it, added one and
-     wrote it back with no lock at all, from eight threads.  Two
-     workers then take the same page and some page is never taken:
-     `page 7 status 0 bytes 0`, about one run in twenty, which is the
-     worst kind of wrong because nineteen runs say it is right. *)
+     the next page to claim.  It was a plain field of Job in the first
+     version of this example, so Claim read it, added one and wrote
+     it back with no lock at all, from eight threads.  Two workers
+     then take the same page, and some page is never taken:
+     `page 7 status 0 bytes 0`, about one run in twenty.  That is the
+     worst kind of wrong, because nineteen runs say it is right. *)
   Work = MONITOR RECORD
     n : I64 ;                 (* how many workers have finished *)
     next : I64 ;              (* the next page to claim *)
@@ -45,8 +45,8 @@ TYPE
     size : SLICE OF I64 ;
   END [SHARABLE] ;
 
-(* THE PAGES.  Real files from the chapter's own zarr store, served
-   on loopback: eight chunks of the CO2 array. *)
+(* THE PAGES.  PathOf names real files from the chapter's own zarr
+   store, served on loopback: eight chunks of the CO2 array. *)
 PROCEDURE PathOf (k: I64) : STR =
 BEGIN
   CASE k OF
@@ -62,8 +62,9 @@ BEGIN
   END
 END PathOf ;
 
-(* one page, into slot k.  Nothing here is shared with another worker
-   except the two slices, and each worker touches only its own k. *)
+(* One fetches one page into slot k.  Nothing here is shared with
+   another worker except the two slices, and each worker touches
+   only its own k. *)
 PROCEDURE One (VAR status: SLICE OF I64 ; VAR size: SLICE OF I64 ;
                k: I64) =
 VAR
@@ -87,8 +88,8 @@ END One ;
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  (* bound to the monitor, so the read and the write cannot be split
-     by another worker: this is one indivisible claim *)
+  (* Claim is bound to the monitor, so another worker cannot split
+     the read and the write.  This is one indivisible claim. *)
   k := w.next ;
   w.next := w.next + 1 ;
   RETURN k
@@ -96,8 +97,8 @@ END Claim ;
 
 PROCEDURE Finish (VAR w: Work) =
 BEGIN
-  (* bound to the monitor, and deliberately tiny: the lock is held
-     for a counter and a signal, never for a download *)
+  (* Finish is bound to the monitor, and deliberately tiny.  The lock
+     is held for a counter and a signal, never for a download. *)
   w.n := w.n + 1 ;
   SIGNAL (w)
 END Finish ;
@@ -134,15 +135,16 @@ BEGIN
     i := i + 1
   END ;
 
-  (* all at once: eight threads, one page each.  The waits overlap --
-     which is the whole point, because waiting is what an I/O-bound
+  (* all at once: eight threads, one page each.  The waits overlap.
+     That is the whole point, because waiting is what an I/O-bound
      program does with its time. *)
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  (* no `j.w.n := 0` here: par 6 refuses reaching into a monitor from
-     outside a bound procedure, and the assignment was writing zero
-     over zero anyway -- pool storage is defined-zero (par 4.3). *)
+  (* There is no `j.w.n := 0` here.  Par 6 refuses reaching into a
+     monitor from outside a bound procedure.  The assignment was
+     writing zero over zero anyway: pool storage is defined-zero
+     (par 4.3). *)
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;

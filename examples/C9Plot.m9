@@ -1,10 +1,12 @@
 MODULE C9Plot ;
 
+IMPORT Text ;
+
 (* Chapter 9.  From numbers to a figure: Plot renders SVG as a
-   STRING -- deterministic bytes, which is why the repository can
-   hold plots to byte-identity against a Modula-2 oracle.  Here: a
-   damped oscillation and its envelope, two labelled series, one
-   file, no plotting daemon anywhere.
+   STRING of deterministic bytes.  That is why the repository can
+   hold plots to byte-identity against a Modula-2 oracle.  This
+   program draws a damped oscillation and its envelope: two labelled
+   series, one file, no plotting daemon anywhere.
 
    Plot is the corpus' one STATEFUL module: AddLine accumulates
    into a module-level figure, which is why the definition says
@@ -38,7 +40,7 @@ BEGIN
   svg := Plot.Render ('damped oscillation', 'time (s)', 'amplitude') ;
   Io.WriteFile ('/tmp/damped.svg', svg) ;
   Io.Write ('wrote /tmp/damped.svg, ') ;
-  Io.WriteI64 (LEN (svg)) ;
+  Io.WriteI64 (Text.BLen (svg)) ;
   Io.WriteLine (' bytes')
 EXCEPT
 | ValueRange :

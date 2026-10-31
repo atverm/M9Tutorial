@@ -6,17 +6,16 @@ RESOLUTION (is this half-hourly data, or irregular samples?), the
 CONVENTION (does 01:00 label the period that starts then, ends
 then, or is centred on it?), and the ZONE.  `Frame` makes all three
 part of the data.  A `Ts` is a frame plus its time axis, its
-resolution in seconds, and its start/end/mid convention; time is
-I64 seconds since the epoch, UTC only — a frame cannot be built
-from local-time stamps, because the hour that repeats every autumn
-is not a bug you want in your averaging windows.
+resolution in seconds, and its start/end/mid convention.  Time is
+I64 seconds since the epoch, UTC only.  A frame cannot be built from
+local-time stamps, because the hour that repeats every autumn is not
+a bug you want in your averaging windows.
 
-The frame itself is typed per column — F64, F32, I64, I32, I16,
-BYTE, BOOL, text — and each numeric column carries its own missing
-value inside the type.  (A BOOL column carries none, deliberately:
-a null that silently became FALSE is the exact lie a flags column
-must refuse, so gaps in booleans are an error with the column
-named.)
+The frame itself is typed per column: F64, F32, I64, I32, I16,
+BYTE, BOOL, text.  Each numeric column carries its own missing value
+inside the type.  (A BOOL column carries none, deliberately.  A null
+that silently became FALSE is the exact lie a flags column must
+refuse, so gaps in booleans are an error with the column named.)
 
 ## Averaging, honestly
 
@@ -25,9 +24,9 @@ MODULE C7Series ;
 
 (* Chapter 7.  A timeseries is a frame plus facts most tables lose:
    the resolution, whether a stamp names the START, END or MIDDLE of
-   its period, and UTC-only time.  Averaging states HOW per column
-   -- a mean of the timestamps would be nonsense, so the caller says
-   First there and Mean for the data, and the windows are aligned to
+   its period, and UTC-only time.  Averaging states HOW per column.
+   A mean of the timestamps would be nonsense, so the caller says
+   First there and Mean for the data.  The windows are aligned to
    the epoch exactly as polars' group_by_dynamic aligns them.       *)
 
 IMPORT Io ;
@@ -112,30 +111,31 @@ END C7Series.
 ```
 
 The output is the hand-checkable answer: 3.100 is the mean of 3.2
-and 3.0; the 01:00 window had one valid reading and one gap, so it
-answers 2.700 — the gap EXCLUDED and the count rule (`minCount`)
-in the caller's hands, per chapter 6's policy; nothing invents a
-value for the missing half hour.
+and 3.0.  The 01:00 window had one valid reading and one gap, so it
+answers 2.700.  The gap is EXCLUDED, and the count rule
+(`minCount`) is in the caller's hands, per chapter 6's policy.
+Nothing invents a value for the missing half hour.
 
-Two design points worth pausing on:
+Two design points are worth pausing on:
 
 - **`hows` says what "average" means PER COLUMN.**  A mean of the
   timestamps would be nonsense; flags want ALL/ANY (`HowLo` /
   `HowHi` over booleans); counters want `HowSum`; text wants
-  `HowFirst` or refusal.  One word per column, visible at the call.
-- **Windows are epoch-aligned** — [00:00, 01:00), [01:00, 02:00) —
-  the same rule as polars' `group_by_dynamic`, and the library's
-  gate holds the two to EXACT agreement on shared samples.  Your
-  M9 resample and your colleague's polars resample land on the
+  `HowFirst` or refusal.  Each column takes one word, visible at
+  the call.
+- **Windows are epoch-aligned**: [00:00, 01:00), [01:00, 02:00).
+  That is the same rule as polars' `group_by_dynamic`, and the
+  library's gate holds the two to EXACT agreement on shared samples.
+  Your M9 resample and your colleague's polars resample land on the
   same rows to the last bit, or the repository's build fails.
 
-The rest of the timeseries toolkit follows the same shape:
+The rest of the timeseries toolkit follows the same shape.
 `MakeContiguous` fills missing PERIODS with each column's declared
-missing value (and refuses disorder, and refuses to invent booleans);
-the netCDF writer (chapter 8's sibling) emits CF-1.8-clean files
+missing value; it refuses disorder, and refuses to invent booleans.
+The netCDF writer (chapter 8's sibling) emits CF-1.8-clean files
 with the time zone stated in the units and the window bounds
 recorded, because this project has been bitten by files that omit
-both; and a Parquet reader/writer covers the interchange case with
+both.  A Parquet reader/writer covers the interchange case, with
 pyarrow as its gate.
 
 [← Previous: simple math and statistics](06-math-stats.md) · [Next: data through zarr →](08-zarr.md)

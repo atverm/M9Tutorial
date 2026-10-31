@@ -1,8 +1,10 @@
 MODULE C18Fit ;
 
-(* Chapter 18: a regression written as matrices -- net ecosystem
-   exchange on light, temperature and the air's dryness at once --
-   and the inverse a standard error needs.
+IMPORT Text ;
+
+(* Chapter 18 writes a regression as matrices: net ecosystem
+   exchange on light, temperature and the air's dryness at once.  It
+   also takes the inverse a standard error needs.
 
    The model is NEE = b0 + b1 SW + b2 TA + b3 VPD, one ROW of the
    design matrix X a half-hour and one COLUMN a term:
@@ -12,9 +14,9 @@ MODULE C18Fit ;
    Mat.LstSq finds the b that makes X b - y smallest.  The
    uncertainty of b needs the inverse of X'X: its diagonal, times the
    variance of the residuals, is the variance of each coefficient.
-   The same inverse also gives b a second way, the textbook way --
-   b = (X'X)^-1 X'y, the "normal equations" -- and the program
-   compares the two, and says why LstSq does not take that road.
+   The same inverse also gives b a second way, the textbook way:
+   b = (X'X)^-1 X'y, the "normal equations".  The program compares
+   the two, and says why LstSq does not take that road.
 
    Last, a design with one column too many: temperature in degrees
    Celsius AND in kelvin.  The two say the same thing, so no single
@@ -33,7 +35,8 @@ CONST
   Terms = ['intercept', 'SW_IN_F', 'TA_F', 'VPD_F'] ;
   Units = ['umol m-2 s-1', 'per W m-2', 'per degC', 'per hPa'] ;
 
-(* the column of that name, declared a 64-bit real before the parse *)
+(* Real answers the column of that name, declared a 64-bit real
+   before the parse. *)
 PROCEDURE Real (VAR t: PTR Csv.Table ; RO name: STR) : I64 =
 VAR c : I64 ;
 BEGIN
@@ -47,8 +50,8 @@ BEGIN
   RETURN c
 END Real ;
 
-(* the largest difference between two column vectors, relative to
-   the larger of each pair *)
+(* RelDiff answers the largest difference between two column
+   vectors, relative to the larger of each pair. *)
 PROCEDURE RelDiff (a, b: PTR Mat.Matrix) : F64 RAISES ValueRange =
 VAR
   i : I64 ;
@@ -63,14 +66,15 @@ BEGIN
   RETURN worst
 END RelDiff ;
 
-(* s and blanks after it, to make a column of the table *)
+(* PadTo answers s and blanks after it, to make a column of the
+   table. *)
 PROCEDURE PadTo (RO s: STR ; width: I64) : STR =
 VAR
   pad : STR ;
   i : I64 ;
 BEGIN
   pad := '' ;
-  FOR i := LEN (s) TO width - 1 DO pad := pad + ' ' END ;
+  FOR i := Text.BLen (s) TO width - 1 DO pad := pad + ' ' END ;
   RETURN s + pad
 END PadTo ;
 
@@ -147,8 +151,8 @@ BEGIN
   b2 := Mat.MulM (pool, xtxInv, Mat.MulM (pool, xt, yv)) ;
   b3 := Mat.Solve (pool, xtx, Mat.MulM (pool, xt, yv)) ;
   Io.WriteLine ('') ;
-  (* an apostrophe in a string: the string goes in double quotes, as
-     M9 strings have no escapes *)
+  (* An apostrophe in a string puts the string in double quotes, as
+     M9 strings have no escapes. *)
   IF RelDiff (b, b2) < 1.0E-8 THEN
     Io.WriteLine ("(X'X)^-1 X'y agrees with LstSq to 8 digits")
   ELSE

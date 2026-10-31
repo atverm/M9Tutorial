@@ -1,12 +1,13 @@
 MODULE C15Stats ;
 
-(* Chapter 15: statistics on a week of eddy-covariance data -- a
+(* Chapter 15 does statistics on a week of eddy-covariance data: a
    regression of net ecosystem exchange on air temperature, a test of
    whether warm and cool half-hours differ, and a thousand draws from
    a normal distribution to show what a p-value actually says.
 
-   Same file as chapter 14 (the shipped week, or a path given on the
-   command line); this time only two columns and no time series.  *)
+   It reads the same file as chapter 14 (the shipped week, or a path
+   given on the command line).  This time it takes only two columns
+   and no time series.  *)
 
 IMPORT Io ;
 IMPORT Faults ;
@@ -20,8 +21,9 @@ CONST
   Trials = 1000 ;
   SeedValue = 20260906 ;       (* a fixed seed: the draws are reproducible *)
 
-(* the half-hours where BOTH values are present, as the two F64
-   slices the statistics take -- a gap in either drops the pair *)
+(* Pairs answers the half-hours where BOTH values are present, as
+   the two F64 slices the statistics take.  A gap in either drops
+   the pair. *)
 PROCEDURE Pairs (VAR pool: POOL ; RO ta, nee: SLICE OF F32 ;
                  VAR x, y: SLICE OF F64) RAISES ValueRange =
 VAR i, n : I64 ;
@@ -44,7 +46,8 @@ BEGIN
   END
 END Pairs ;
 
-(* the y values whose x lies below the cut, and those at or above it *)
+(* Split answers the y values whose x lies below the cut, and those
+   at or above it. *)
 PROCEDURE Split (VAR pool: POOL ; RO x, y: SLICE OF F64 ; cut: F64 ;
                  VAR lo, hi: SLICE OF F64) =
 VAR i, nl, nh : I64 ;

@@ -1,17 +1,17 @@
 # 16. Threads for computation, and what the cores actually give you
 
 Chapter 11 used threads to overlap *waiting*: eight downloads at
-once. This chapter uses them to overlap *arithmetic* — a matrix
-product, a matrix inversion, and a hash over a whole file — on a
-laptop with eight cores, and measures what that buys. The answer is
-"it depends on the work", with numbers, which is more useful than
+once. This chapter uses them to overlap *arithmetic* (a matrix
+product, a matrix inversion, and a hash over a whole file) on a
+laptop with eight cores. It measures what that buys. The answer is
+"it depends on the work", with numbers, and that is more useful than
 "faster".
 
 The discipline is the one chapter 11 taught, and it does not change
 for arithmetic:
 
-- cut the work into bands that touch **disjoint** parts of the result
-  — rows of the product, columns of the inverse, chunks of the file;
+- cut the work into bands that touch **disjoint** parts of the result:
+  rows of the product, columns of the inverse, chunks of the file;
 - every worker claims its band through a **monitor**, computes it in
   its **own pool**, and writes only its own part of the result;
 - the main thread **waits on the monitor**, then reads.
@@ -25,9 +25,9 @@ arithmetic, and the answer cannot depend on which band finished first.
 MODULE C16Mat ;
 
 (* Chapter 16: computation goes faster with threads when there are
-   cores to run them on -- a matrix product and a matrix inversion,
-   each done once on one thread and once on eight, and the two
-   answers compared BIT FOR BIT.
+   cores to run them on.  This program does a matrix product and a
+   matrix inversion, each once on one thread and once on eight, and
+   compares the two answers BIT FOR BIT.
 
    The shape of every threaded computation here is the same:
      * the work is cut into bands that touch DISJOINT parts of the
@@ -54,8 +54,8 @@ CONST
   Bands = 8 ;
 
 TYPE
-  (* the finish line and the band counter -- everything the workers
-     share AND change lives in the monitor, and nowhere else *)
+  (* the finish line and the band counter.  Everything the workers
+     share AND change lives in the monitor, and nowhere else. *)
   Work = MONITOR RECORD
     n : I64 ;                  (* workers finished *)
     next : I64 ;               (* the next band to claim *)
@@ -115,8 +115,8 @@ BEGIN
   IF k < Bands THEN
     r0 := Lo (k) ; r1 := Hi (k) ;
     BEGIN
-      (* my rows of A, then the whole of B: the same MulM the serial
-         version calls, on a slice of the problem *)
+      (* Take my rows of A, then the whole of B.  This is the same
+         MulM the serial version calls, on a slice of the problem. *)
       band := Mat.New (wpool, r1 - r0, N) ;
       FOR r := 0 TO r1 - r0 - 1 DO
         FOR c := 0 TO N - 1 DO
@@ -124,7 +124,7 @@ BEGIN
         END
       END ;
       p := Mat.MulM (wpool, band, j.b) ;
-      (* into MY rows of the shared product, and no one else's *)
+      (* Copy into MY rows of the shared product, and no one else's. *)
       FOR r := 0 TO r1 - r0 - 1 DO
         FOR c := 0 TO N - 1 DO
           Mat.Set (j.prod, r0 + r, c, Mat.Get (p, r, c))
@@ -180,7 +180,8 @@ BEGIN
   RETURN TRUE
 END Identical ;
 
-(* how far a product is from the identity, as a single number *)
+(* FarFromIdentity says how far a product is from the identity, as
+   a single number. *)
 PROCEDURE FarFromIdentity (m: PTR Mat.Matrix) : F64 =
 VAR
   r, c : I64 ;
@@ -209,8 +210,8 @@ VAR
 
 BEGIN
   BEGIN
-    (* two matrices with a pattern rather than random numbers, so the
-       whole run is reproducible with no seed to carry *)
+    (* Fill two matrices with a pattern rather than random numbers,
+       so the whole run is reproducible with no seed to carry. *)
     a := Mat.New (pool, N, N) ;
     b := Mat.New (pool, N, N) ;
     FOR r := 0 TO N - 1 DO
@@ -234,8 +235,8 @@ BEGIN
     AwaitAll (mj.w, Bands) ;
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
-    (* timings only when asked (any argument): a number that changes
-       from run to run has no place in gated output *)
+    (* Report timings only when asked (any argument).  A number that
+       changes from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
       Io.ErrLine ('product: serial ' + Fmt.Fixed (serial, 3) + ' s, '
                   + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)
@@ -303,7 +304,7 @@ into a matrix of its own and calls the same `Mat.MulM` the serial
 version calls, on that band and the whole of B. The inverse is banded
 by **columns**, and it works because of how `Mat.SpdInverse` is built:
 a Cholesky factorisation once, then `Mat.CholSolve` on the identity
-matrix — and `CholSolve` treats each column of its right-hand side on
+matrix. And `CholSolve` treats each column of its right-hand side on
 its own. So the main thread factors once, and each worker solves its
 own band of identity columns with the same procedure.
 
@@ -324,21 +325,21 @@ S times the inverse is the identity to within 1e-9: yes
 ```m9 C16Hash.m9
 MODULE C16Hash ;
 
-(* Chapter 16, second half: a hash sum over a whole file, computed in
-   parallel chunks -- and the one rule that makes a parallel sum
-   reproducible: the pieces are combined in a FIXED order.
+(* Chapter 16, second half, computes a hash sum over a whole file in
+   parallel chunks.  One rule makes a parallel sum reproducible: the
+   pieces are combined in a FIXED order.
 
    The hash is a polynomial over the bytes, h := h * P + byte, in
-   64-bit arithmetic that wraps -- M9 spells that `*%` and `+%`, the
-   operators that say out loud they are modular, where ordinary `*`
-   would raise Overflow.  Each worker hashes its own chunk into its
-   own slot of the result; the main thread then folds the slots in
-   chunk order.  Fold them in another order and the number changes,
-   which the program shows on purpose: the order is part of what the
+   64-bit arithmetic that wraps.  M9 spells that `*%` and `+%`, the
+   operators that say out loud they are modular; ordinary `*` would
+   raise Overflow.  Each worker hashes its own chunk into its own
+   slot of the result.  The main thread then folds the slots in
+   chunk order.  Fold them in another order and the number changes.
+   The program shows that on purpose: the order is part of what the
    hash IS, not an implementation detail.
 
    The shipped week is half a megabyte and hashes in a millisecond
-   either way; the chapter's timings come from the full 186 MB file,
+   either way.  The chapter's timings come from the full 186 MB file,
    given as an argument.                                             *)
 
 IMPORT Io ;
@@ -381,8 +382,8 @@ BEGIN
   WHILE w.n < want DO WAIT (w) END
 END AwaitAll ;
 
-(* the hash of one run of bytes.  `*%` and `+%` wrap mod 2^64 by
-   definition; the result is a bit pattern held in an I64. *)
+(* HashOf answers the hash of one run of bytes.  `*%` and `+%` wrap
+   mod 2^64 by definition; the result is a bit pattern in an I64. *)
 PROCEDURE HashOf (RO b: SLICE OF BYTE) : I64 =
 VAR
   h, i : I64 ;
@@ -413,7 +414,7 @@ BEGIN
   Finish (j.w)
 END Worker ;
 
-(* the fold: chunk hashes into one number, in chunk order *)
+(* Combine folds the chunk hashes into one number, in chunk order. *)
 PROCEDURE Combine (RO part: SLICE OF I64 ; reversed: BOOL) : I64 =
 VAR
   total, k : I64 ;
@@ -465,9 +466,9 @@ BEGIN
     AwaitAll (j.w, Chunks) ;
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
-    (* timings only for a file named on the command line: the shipped
-       week hashes in a millisecond, and a number that changes from
-       run to run has no place in gated output *)
+    (* Report timings only for a file named on the command line.  The
+       shipped week hashes in a millisecond, and a number that changes
+       from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
       Io.ErrLine ('hash: serial ' + Fmt.Fixed (serial, 3) + ' s, '
                   + Fmt.I64Str (Chunks) + ' threads ' + Fmt.Fixed (par, 3)
@@ -492,19 +493,19 @@ END C16Hash.
 ```
 
 The hash is a polynomial over the bytes, `h := h *% P +% byte`, in
-arithmetic that *wraps*. M9 spells that `*%` and `+%` — operators
-that say out loud they are modular — where the ordinary `*` and `+`
-would raise `Overflow` the first time the value passed 2⁶³. Each
-worker hashes one chunk into its own slot; the main thread folds the
+arithmetic that *wraps*. M9 spells that `*%` and `+%`, operators
+that say out loud they are modular. The ordinary `*` and `+` would
+raise `Overflow` the first time the value passed 2⁶³. Each worker
+hashes one chunk into its own slot, and the main thread folds the
 slots in chunk order.
 
 The last line of the output is the point of the second half: the
 same eight slots folded in the *reverse* order give a different
 number. The order in which parallel results are combined is part of
-what the result *is*, and a program that lets "whichever finished
-first" decide it will give a different answer on a different day.
-Chapter 11's rule — every worker writes at its own index — is what
-keeps the order fixed here.
+what the result *is*. A program that lets "whichever finished first"
+decide it will give a different answer on a different day. Chapter
+11's rule, every worker writes at its own index, keeps the order
+fixed here.
 
 ```output C16Hash
 file: 494494 bytes in 8 chunks
@@ -518,12 +519,12 @@ the same slots folded in reverse order: -3294561009219321149  -- a different num
 
 The example above uses 500×500 matrices, sized so the run finishes
 inside the tutorial sandbox's ten-second wall on a slow host. The
-numbers below were measured at **800×800** — about four times the
-arithmetic — on this laptop (AMD Ryzen 7 8840U: 8 cores, 16 hardware
-threads, under WSL2), which is where the threading has enough work
-to show its shape; change the `N` in the source and pass any
-argument to reproduce them. Timings each program prints to stderr,
-best of two:
+numbers below were measured at **800×800**, about four times the
+arithmetic, on this laptop (AMD Ryzen 7 8840U: 8 cores, 16 hardware
+threads, under WSL2). At that size the threading has enough work to
+show its shape. Change the `N` in the source and pass any argument to
+reproduce them. The table shows the timings each program prints to
+stderr, best of two:
 
 | work | one thread | 8 bands | speed-up |
 |---|---|---|---|
@@ -531,13 +532,13 @@ best of two:
 | 800×800 SPD inverse | 0.55 s | 0.20 s | 2.8× |
 | hash of 186 MB | 0.17 s | 0.024 s | 7.3× |
 
-Three things worth knowing about that table.
+Three things are worth knowing about that table.
 
 **The hash scales almost perfectly and the matrices do not**, on the
-same cores. The hash is a simple integer loop streaming bytes; the
+same cores. The hash is a simple integer loop streaming bytes. The
 matrix work is floating-point with a checked array access per
 element, and a laptop drops its clock under that kind of load on all
-cores at once. The single-thread time was measured at boost clock;
+cores at once. The single-thread time was measured at boost clock,
 the eight-band time at all-core clock. That ceiling belongs to the
 machine, not the program.
 
@@ -546,32 +547,32 @@ obvious suspect was `Mat.MulM`'s loop order: its innermost loop walks
 B down a *column*, a stride of 800 doubles, so the multiply looked
 memory-bound and eight threads would simply share the bottleneck.
 Rewritten to walk both operands along rows, it was **twice as slow**
-(0.71 s against 0.35 s) — the row-wise form pays a checked
+(0.71 s against 0.35 s). The row-wise form pays a checked
 read-modify-write of the result per inner step, where the column
-form accumulates in a register. Same bits either way. The lesson is
-the one this whole tutorial keeps returning to: explain after
+form accumulates in a register. Both give the same bits. The lesson
+is the one this whole tutorial keeps returning to: explain after
 measuring, not before.
 
 **More bands than cores still helped.** The product went 2.6× at four
 bands, 3.1× at eight, 4.5× at sixteen: the hardware threads fill the
-latency the checked accesses leave. Whether that holds on your
-machine is a two-line change and a stopwatch, which is why the
-program prints its own timings.
+latency the checked accesses leave. A two-line change and a stopwatch
+tell you whether that holds on your machine, which is why the program
+prints its own timings.
 
 ## Two rules the compiler holds, and two it does not
 
-The monitor's fields are reachable only from procedures bound to it
-— `Claim`, `Finish` and `AwaitAll` — and the compiler refuses a
-`j.w.next` from anywhere else; that is why nothing initialises the
-monitor from the main body (pool storage is already zero). A worker
-that raises with nothing to catch it stops the whole program, by
-design, so each worker here catches `Faults.SizeError` itself.
+The monitor's fields are reachable only from procedures bound to it:
+`Claim`, `Finish` and `AwaitAll`. The compiler refuses a `j.w.next`
+from anywhere else. That is why nothing initialises the monitor from
+the main body (pool storage is already zero). A worker that raises
+with nothing to catch it stops the whole program, by design, so each
+worker here catches `Faults.SizeError` itself.
 
-What the compiler does *not* check is that the bands are disjoint:
+The compiler does *not* check that the bands are disjoint.
 `Mat.Set (j.prod, r0 + r, c, ...)` from eight threads is a data race
 if two workers ever share a row, and nothing in the language would
-say so. The row range is a contract you hold — the same one chapter
-11 states as *every worker writes at its own index* — and the
+say so. The row range is a contract you hold, the same one chapter
+11 states as *every worker writes at its own index*. The
 bit-identical comparison at the end is how the program checks it
 kept it.
 

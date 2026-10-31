@@ -1,18 +1,18 @@
 # 13. Procedures: calls, returns, and the parameter modes
 
-Every chapter so far has called procedures; this one is about what a
-procedure heading PROMISES.  In M9 the heading is the whole contract
-between a caller and a body, and the parameter modes are the words
-it is written in: who may read, who may write, who keeps what.  The
-checker holds the body to the heading, so a reviewer can read the
-heading and believe it without opening the body.
+Every chapter so far has called procedures.  This one is about what
+a procedure heading PROMISES.  In M9 the heading is the whole
+contract between a caller and a body, and the parameter modes are
+the words it is written in: who may read, who may write, who keeps
+what.  The checker holds the body to the heading, so a reviewer can
+read the heading and believe it without opening the body.
 
 ```m9 C13Modes.m9
 MODULE C13Modes ;
 
-(* Chapter 13: procedures -- how a call passes its arguments, how a
-   function answers on every path, and what each parameter MODE
-   promises.  The modes are the whole story: a mode is a promise the
+(* Chapter 13 covers procedures: how a call passes its arguments, how
+   a function answers on every path, and what each parameter MODE
+   promises.  The modes are the whole story.  A mode is a promise the
    compiler holds the body to, and the reviewer can read it off the
    heading without opening the body.
 
@@ -90,8 +90,8 @@ END Nearest ;
    the string outlives the call.  Without KEPT on s the checker
    refuses the assignment: a borrowed argument may not reach module
    state undeclared (par 4.1).  With it, the caller can read off the
-   heading that what it passes will be held on to.  RO beside it
-   because the caller passes a literal, and a literal is lent only
+   heading that what it passes will be held on to.  RO stands beside
+   it because the caller passes a literal, and a literal is lent only
    to a parameter that promises not to write it (par 2.4). --- *)
 VAR lastLabel : STR ;
 
@@ -124,8 +124,8 @@ BEGIN
                   + ', of 0.0: ' + Fmt.I64Str (Sign (0.0))
                   + ', of 7.0: ' + Fmt.I64Str (Sign (7.0))) ;
 
-    (* three points on the plane, and a query that has a neighbour
-       within 2, and one that has none *)
+    (* Make three points on the plane.  One query below has a
+       neighbour within 2, and one has none. *)
     pts := NEW (pool, PointRef, 3) ;
     FOR i := 0 TO 2 DO
       pts[i] := NEW (pool, Point) ;
@@ -166,38 +166,40 @@ remembered: the label that outlives its call
 
 ## The modes
 
-**Value** — `f: F64` in `Scale`, `v: F64` in `Sign`.  A scalar is
-copied; the body has its own.  A POINTER passed by value is not
-copied into anything the body may change: it is a shared borrow,
-readable and not writable, and not passable onward as `VAR` (report
-par 4.1).  The first refusal below shows that rule firing.
+**Value** parameters are `f: F64` in `Scale` and `v: F64` in `Sign`.
+A scalar is copied; the body has its own.  A POINTER passed by value
+is not copied into anything the body may change: it is a shared
+borrow, readable and not writable, and not passable onward as `VAR`
+(report par 4.1).  The X13Write refusal below shows that rule firing.
 
-**VAR** — `Scale (VAR p: Point ; f: F64)`.  The body has the
-caller's own variable and may change it, and the heading says so.
-After `Scale (a, 0.5)` the caller's `a` is different, and the
+**VAR** appears in `Scale (VAR p: Point ; f: F64)`.  The body has
+the caller's own variable and may change it, and the heading says
+so.  After `Scale (a, 0.5)` the caller's `a` is different, and the
 reader knew it would be from the `VAR` alone.
 
-**RO** — `Norm (RO p: Point)`.  A read-only borrow: the body could
-not write `p.x` if it tried.  Use it for anything big enough that
-you would not want it copied and whose caller must be sure it is
-unchanged — a record, a slice, a matrix.  (`RO` on a record is
-copied by the current generator — a known cost, not a semantic
-difference; the promise holds either way.)
+**RO** appears in `Norm (RO p: Point)`.  It is a read-only borrow:
+the body could not write `p.x` if it tried.  Use it for anything big
+enough that you would not want it copied and whose caller must be
+sure it is unchanged: a record, a slice, a matrix.  (The current
+generator copies an `RO` record.  That is a known cost, not a
+semantic difference; the promise holds either way.)
 
-**KEPT** — `Remember (RO KEPT s: STR)`.  This body stores its argument
-in a module variable, so the string is held beyond the call.  That
-is a retention, and par 4.1 requires it to be declared: without
-`KEPT` on `s` the checker refuses the assignment, naming the
-parameter and the word that would fix it — the second refusal
-below.  With it, a caller reads off the heading that what it passes
-will be kept, which changes what it may pass (a slice into a pool
-that dies at the next line would be a mistake, and now a visible
-one).  `KEPT` composes with a mode, and here the mode is `RO`: the
-program passes a string literal, and read-only storage — a literal,
-a `CONST`, what an `RO` parameter views — is lent only to an `RO`
-parameter.  A plain `s: STR` could be written through
-(`s[0] := 'X'`), and the checker refuses the call rather than trust
-that the body does not.
+**KEPT** appears in `Remember (RO KEPT s: STR)`.  This body stores
+its argument in a module variable, so the string is held beyond the
+call.  That is a retention, and par 4.1 requires it to be declared.
+Without `KEPT` on `s` the checker refuses the assignment, naming the
+parameter and the word that would fix it; the X13Keep refusal below
+shows it.  With it, a caller reads off the heading that what it
+passes will be kept.  That changes what it may pass: a slice into a
+pool that dies at the next line would be a mistake, and now a
+visible one.  `KEPT` composes with a mode, and here the mode is
+`RO`.  The program passes a string literal.  Nothing writes through
+a STR, so a literal may go to any STR parameter, and `RO` says so at
+the heading.  A `SLICE OF CHAR` is different: a plain `s: SLICE OF
+CHAR` could be written through (`s[0] := 'X'`).  So read-only
+storage (a literal, a `CONST`, what an `RO` parameter views) is lent
+only to an `RO` one, and the checker refuses the call rather than
+trust that the body does not.
 
 **OWN**, not used here, moves ownership of an owned pointer INTO the
 procedure; the caller's name is dead afterwards.  Chapter 4 and
@@ -206,25 +208,25 @@ report par 4.2 cover it.
 ## A function answers on every path
 
 `Sign` has three branches and three `RETURN`s.  Remove the `ELSE`
-and the checker refuses the procedure: there is a path that reaches
-`END` without answering, and in Pascal or C that path would deliver
-whatever happened to be in the result register — a garbage number
-that looks as real as any other and travels straight into your
-results.  M9 will not compile a function that can fall off its end;
-`X13Fall` below is exactly that edit, with the checker's answer.
+and the checker refuses the procedure: one path reaches `END`
+without answering.  In Pascal or C that path would deliver whatever
+happened to be in the result register: a garbage number that looks
+as real as any other and travels straight into your results.  M9
+will not compile a function that can fall off its end.  `X13Fall`
+below is exactly that edit, with the checker's answer.
 
-The rule is one you can apply by eye, because the checker applies it
-the same way: an `IF` without an `ELSE` can be passed, a `WHILE` or
-a `FOR` can be passed, a `LOOP` only through its own `EXIT`, and a
-`CASE` or a handler when one of its arms does not answer.  A call
-never counts as an ending, whatever the procedure it calls does — so
-a function whose last act is to fail writes `RAISE`, not a helper
-that raises for it.
+You can apply the rule by eye, because the checker applies it the
+same way.  An `IF` without an `ELSE` can be passed, and so can a
+`WHILE` or a `FOR`.  A `LOOP` can be passed only through its own
+`EXIT`, and a `CASE` or a handler when one of its arms does not
+answer.  A call never counts as an ending, whatever the procedure it
+calls does.  So a function whose last act is to fail writes `RAISE`,
+not a helper that raises for it.
 
 ## "Maybe" is a type, not a null pointer
 
 `Nearest` answers `OPT PTR Point`: a point, or `NONE`.  Inside, a
-found pointer is wrapped with `SOME (pts[i])` — a `PTR` never
+found pointer is wrapped with `SOME (pts[i])`.  A `PTR` never
 becomes an `OPT PTR` by itself, any more than an `I32` becomes an
 `I64`.  Outside, the caller cannot touch the result except through
 the guard:
@@ -232,30 +234,30 @@ the guard:
     IF Nearest (pts, origin, 2.0) IS SOME p THEN ... ELSE ... END
 
 `p` exists only inside the THEN, and only when there is something
-for it to be.  There is no way to write the faith-based dereference
-that turns an empty result into a crash — the guard is the only door
-to the value, so the case where there is nothing cannot be forgotten.
+for it to be.  You cannot write the faith-based dereference that
+turns an empty result into a crash.  The guard is the only door to
+the value, so the case where there is nothing cannot be forgotten.
 
 ## Enumerations: a type that is a fixed set of names
 
-Much of what a scientist records is categorical, not numeric: a
+A scientist records much that is categorical, not numeric: a
 quality flag, an instrument state, a land-cover class.  Written as
-bare integers -- `0` good, `1` suspect, `2` bad -- the meaning lives
-in a comment somewhere and the compiler cannot help when a `3` slips
-in or two tables disagree on what `1` meant.  An **enumeration** makes
+bare integers (`0` good, `1` suspect, `2` bad), the meaning lives in
+a comment somewhere.  The compiler cannot help when a `3` slips in
+or two tables disagree on what `1` meant.  An **enumeration** makes
 the set of values a type:
 
 ```m9 C13Kinds.m9
 MODULE C13Kinds ;
 
 (* Chapter 13.  An ENUMERATION is a type that is a fixed, named set of
-   values -- a quality flag, an instrument state, a category.  It is a
+   values: a quality flag, an instrument state, a category.  It is a
    case record with no payload, so the total-CASE rule from this
-   chapter applies: every value is covered, no ELSE, and a value added
-   to the type later breaks every CASE that forgot it -- at compile
-   time, not in a run.  NAME turns a value into its own identifier
-   text, and an ARRAY indexed by the type tallies one slot per value
-   with no ordinals written down anywhere. *)
+   chapter applies.  Every value is covered, with no ELSE.  A value
+   added to the type later breaks every CASE that forgot it, at
+   compile time, not in a run.  NAME turns a value into its own
+   identifier text.  An ARRAY indexed by the type tallies one slot
+   per value with no ordinals written down anywhere. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
@@ -263,9 +265,9 @@ IMPORT Fmt ;
 TYPE Quality = (Good, Suspect, Bad) ;
 
 PROCEDURE Keep (q: Quality) : BOOL =
-  (* which readings survive quality control.  Total over Quality: add
-     a fourth flag and this procedure will not compile until it says
-     what to do with it. *)
+  (* Keep says which readings survive quality control.  It is total
+     over Quality: add a fourth flag and this procedure will not
+     compile until it says what to do with it. *)
 BEGIN
   CASE q OF
   | Good : RETURN TRUE
@@ -311,34 +313,34 @@ kept 6 of 8
 ```
 
 An enumeration is a case record with no payload, so the total-CASE
-rule from `Sign` above applies to it directly: `Keep` covers every
-`Quality`, needs no `ELSE`, and the day someone adds a fourth flag it
-stops compiling until it says what to do with the new one -- the
-opposite of an integer `switch` that silently falls through.  `NAME`
-turns a value into its own identifier text, so a report reads `Good`,
-`Suspect`, `Bad` without a hand-written table that can drift from the
-type.  `FOR q := Quality.Good TO Quality.Bad` walks the members in
-order, and `ARRAY Quality OF I64` gives one tally slot per value,
-indexed by the value itself -- `tally[flags[i]]`, with no ordinal
-written down and no way to index past the end, because the index *is*
-the type.
+rule from `Sign` above applies to it directly.  `Keep` covers every
+`Quality` and needs no `ELSE`.  The day someone adds a fourth flag,
+it stops compiling until it says what to do with the new one.  That
+is the opposite of an integer `switch` that silently falls through.
+`NAME` turns a value into its own identifier text, so a report reads
+`Good`, `Suspect`, `Bad` without a hand-written table that can drift
+from the type.  `FOR q := Quality.Good TO Quality.Bad` walks the
+members in order.  `ARRAY Quality OF I64` gives one tally slot per
+value, indexed by the value itself: `tally[flags[i]]`.  No ordinal
+is written down, and no index can run past the end, because the
+index *is* the type.
 
 ## What the checker refuses
 
-A function that can reach its `END` without answering — `Sign` with
-its `ELSE` removed:
+Here is a function that can reach its `END` without answering:
+`Sign` with its `ELSE` removed.
 
 ```m9 X13Fall.m9
 MODULE X13Fall ;
 
 (* EXPECT-ERROR: a function must RETURN or RAISE on every path *)
-(* Chapter 13, a program that must NOT compile.  Sign from C13Modes
-   with its ELSE removed: there is now a path -- v = 0.0 -- that
+(* Chapter 13 shows a program that must NOT compile.  It is Sign
+   from C13Modes with its ELSE removed.  Now one path, v = 0.0,
    reaches END with nothing to answer.  In Pascal or C that path
-   delivers whatever was in the result register; here the checker
+   delivers whatever was in the result register.  Here the checker
    names the function before it can.  The rule is structural, so a
-   reader can apply it by eye: an IF without ELSE can be passed, and
-   so can a WHILE or a FOR; a call never counts as an ending.       *)
+   reader can apply it by eye.  An IF without ELSE can be passed,
+   and so can a WHILE or a FOR.  A call never counts as an ending.  *)
 
 IMPORT Io ;
 
@@ -361,18 +363,18 @@ END X13Fall.
 X13Fall.m9:14:1: X13Fall.Sign: a function must RETURN or RAISE on every path: Sign can reach its END (par 3)
 ```
 
-The shared-borrow rule, on a pointer passed by value:
+This is the shared-borrow rule, on a pointer passed by value:
 
 ```m9 X13Write.m9
 MODULE X13Write ;
 
 (* EXPECT-ERROR: cannot write through a value parameter *)
-(* Chapter 13, a program that must NOT compile.  A pointer passed by
-   VALUE is a shared borrow: the body may read what it points at and
-   may not change it.  In C this would be a silent write into the
-   caller's data through a copied pointer; here the mode on the
-   heading says "look, do not touch", and the checker holds the body
-   to it.  Write `VAR p: PTR Point` if you mean to change it.       *)
+(* Chapter 13 shows a program that must NOT compile.  A pointer
+   passed by VALUE is a shared borrow: the body may read what it
+   points at and may not change it.  In C this would be a silent
+   write into the caller's data through a copied pointer.  Here the
+   heading's mode says "look, do not touch"; the checker holds the
+   body to it.  Write `VAR p: PTR Point` if you mean to change it.  *)
 
 IMPORT Io ;
 
@@ -403,18 +405,18 @@ X13Write.m9:20:3: X13Write.Zero: cannot write through a value parameter: p is a 
 X13Write.m9:21:3: X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
 ```
 
-And the retention rule, on a borrowed string that reaches module
-state:
+And this is the retention rule, on a borrowed string that reaches
+module state:
 
 ```m9 X13Keep.m9
 MODULE X13Keep ;
 
 (* EXPECT-ERROR: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1) *)
-(* Chapter 13, a program that must NOT compile.  Remember stores its
-   argument in a module variable, so the string is KEPT beyond the
-   call -- and the heading does not say so.  A caller reading
+(* Chapter 13 shows a program that must NOT compile.  Remember
+   stores its argument in a module variable, so the string is KEPT
+   beyond the call.  The heading does not say so.  A caller reading
    `RO s: STR` is entitled to believe the call borrows s and lets it
-   go; the body breaks that promise, and the checker names the
+   go.  The body breaks that promise, and the checker names the
    parameter and the word that would fix it.                         *)
 
 IMPORT Io ;
@@ -436,11 +438,11 @@ END X13Keep.
 X13Keep.m9:17:13: X13Keep.Remember: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1)
 ```
 
-Both diagnostics name the parameter and the mode that would make
-the program legal.  Neither is a style complaint: the first is a
-write into the caller's data through a copied pointer, which is a
-classic silent C bug, and the second is a dangling reference waiting
-for the caller to free what the module still points at.
+The X13Write and X13Keep diagnostics both name the parameter and
+the mode that would make the program legal.  Neither is a style complaint.  The first is a
+write into the caller's data through a copied pointer, a classic
+silent C bug.  The second is a dangling reference waiting for the
+caller to free what the module still points at.
 
 [← Previous: building strings](12-building-strings.md)
 

@@ -1,34 +1,36 @@
 # 10 — A real dataset, end to end
 
-Everything the eight chapters built, on real data: nine years of
-hourly CO2 measured 150 m above the forest at the ICOS station
-Hyltemossa (HTM, southern Sweden), read straight out of the Carbon
-Portal's zarr service, quality-controlled by the station's own
-flags, decomposed by ordinary least squares into a linear trend
-plus annual and semiannual harmonics, and plotted.
+This chapter puts everything the eight chapters built to work on
+real data.  It reads nine years of hourly CO2 measured 150 m above
+the forest at the ICOS station Hyltemossa (HTM, southern Sweden),
+straight out of the Carbon Portal's zarr service.  It
+quality-controls them by the station's own flags, decomposes them
+by ordinary least squares into a linear trend plus annual and
+semiannual harmonics, and plots them.
 
 The data is the ICOS ObsPack collection (CC BY 4.0,
 [doi:10.18160/JZ2X-GZGU](https://doi.org/10.18160/JZ2X-GZGU)),
 served at `zarr.icos-cp.eu`.  The sandbox behind this page serves a
-**raw byte mirror** of the three HTM arrays — the portal's own
-objects, undecoded — so the program below runs here without
-network, and runs unchanged on your machine against the live
-service:
+**raw byte mirror** of the three HTM arrays: the portal's own
+objects, undecoded.  So the program below runs here without network,
+and runs unchanged on your machine against the live service:
 
     m9c -o co2fit C10Icos.m9
     ./co2fit https://zarr.icos-cp.eu/icos-obspack.zarr
 
-Same bytes in, same numbers out — that is what the mirror being the
-live store's own objects buys.
+Same bytes in, same numbers out: the mirror buys that by being the
+live store's own objects.
 
 ```m9 C10Icos.m9
 MODULE C10Icos ;
 
-(* Chapter 10.  The capstone: nine years of real hourly CO2 from the
-   ICOS station Hyltemossa (HTM, southern Sweden), measured 150 m
-   above the forest, read straight out of the Carbon Portal's zarr
-   service and decomposed with ordinary least squares into a linear
-   trend plus annual and semiannual harmonics -- a Fourier fit:
+IMPORT Text ;
+
+(* Chapter 10 is the capstone.  It reads nine years of real hourly
+   CO2 from the ICOS station Hyltemossa (HTM, southern Sweden),
+   measured 150 m above the forest, straight out of the Carbon
+   Portal's zarr service.  Ordinary least squares decomposes it into
+   a linear trend plus annual and semiannual harmonics, a Fourier fit:
 
      co2(t) ~ c0 + c1 t + c2 cos 2pi t + c3 sin 2pi t
                        + c4 cos 4pi t + c5 sin 4pi t
@@ -57,9 +59,9 @@ IMPORT ZarrStore ;
 
 CONST
   Lo     = 2017.25 ;         (* the fit window: 2017-2025.  The live
-                                store grows past it; the window is
-                                what makes a live run comparable to
-                                the recorded one *)
+                                store grows past it.  The window makes
+                                a live run comparable to the recorded
+                                one. *)
   Hi     = 2026.0 ;
   Mid    = 2021.5 ;          (* centre time: a well-behaved matrix *)
   Months = 105 ;             (* 1/12-year bins across the window   *)
@@ -70,7 +72,8 @@ CONST
 
 PROCEDURE At (VAR arr: PTR ZarrStore.Array ; i: I64) : F64
   RAISES ZarrStore.StoreError =
-  (* element i of a 1-D array, checked against the store's shape.
+  (* At answers element i of a 1-D array, checked against the
+     store's shape.
 
        arr -- VAR because a read can grow the chunk cache.
        i   -- 0-based; out of range raises IndexError, always.      *)
@@ -82,8 +85,9 @@ END At ;
 
 PROCEDURE AtI (VAR arr: PTR ZarrStore.Array ; i: I64) : I64
   RAISES ZarrStore.StoreError, ValueRange =
-  (* the integer twin: ValueRange is the store handing back
-     something an I64 cannot hold -- declared, because chapter 2. *)
+  (* AtI is the integer twin.  It raises ValueRange when the store
+     hands back something an I64 cannot hold.  The heading declares
+     it, because chapter 2. *)
 VAR ix : ARRAY 1 OF I64 ;
 BEGIN
   ix [0] := i ;
@@ -92,7 +96,7 @@ END AtI ;
 
 PROCEDURE Model (RO c: SLICE OF F64 ; t: F64) : F64
   RAISES ValueRange, Overflow, IndexError =
-  (* the fitted curve at one time.
+  (* Model answers the fitted curve at one time.
 
        c -- the six coefficients, in the order the design matrix
             declared them: constant, slope, annual cos/sin,
@@ -212,7 +216,7 @@ BEGIN
                       'year', 'CO2 (umol/mol)') ;
   Io.WriteFile ('/tmp/htm.svg', svg) ;
   Io.Write ('wrote /tmp/htm.svg, ') ;
-  Io.WriteI64 (LEN (svg)) ;
+  Io.WriteI64 (Text.BLen (svg)) ;
   Io.WriteLine (' bytes')
 EXCEPT
 | ZarrStore.StoreError :
@@ -254,23 +258,23 @@ wrote /tmp/htm.svg, 3748547 bytes
 ![nine years of CO2 at Hyltemossa: every QC-passed hour a dot, the monthly means and the six-coefficient Fourier fit over them](../examples/expect/htm.svg)
 
 
-What the numbers say: CO2 at Hyltemossa climbs about 2.5 umol/mol a
-year, and the forest breathes an 18 umol/mol seasonal swing around
-that climb — summer drawdown, winter release — with a semiannual
-correction of a couple of umol/mol shaping the shoulders.  The plot
+The numbers say this.  CO2 at Hyltemossa climbs about 2.5 umol/mol
+a year.  The forest breathes an 18 umol/mol seasonal swing around
+that climb, summer drawdown and winter release.  A semiannual
+correction of a couple of umol/mol shapes the shoulders.  The plot
 draws every QC-passed hour as a small black dot, with the monthly
-means and the six-coefficient fit over them — nine years of raw
-observations and their summary in one picture.
+means and the six-coefficient fit over them.  It shows nine years of
+raw observations and their summary in one picture.
 
-Worth noticing on the way out:
+Notice these on the way out:
 
 - **The quality control is the station's.**  `co2_qc_flag` carries
-  the ATC convention the store itself documents — keep `'U'` and
-  `'O'` — and the flag array is read like any other: a one-byte
+  the ATC convention the store itself documents: keep `'U'` and
+  `'O'`.  The flag array is read like any other: a one-byte
   categorical is a byte, and `ORD ('U')` is a number.
 - **The gaps cost one visible line.**  A NaN hour fails `v = v` and
-  is simply not a row of the least squares — chapter 6's rule,
-  at 72,456 rows.
+  is simply not a row of the least squares.  That is chapter 6's
+  rule, at 72,456 rows.
 - **The normal equations are six-by-six** whatever the row count:
   one pass accumulates them, `Mat.Cholesky` + `Mat.CholSolve`
   answer the coefficients, and the condition number is kept honest

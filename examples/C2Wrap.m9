@@ -1,7 +1,7 @@
 MODULE C2Wrap ;
 
 (* Chapter 2.  `+` on integers is CHECKED: overflow raises, always,
-   because that is what the operator means -- there is no release
+   because that is what the operator means.  There is no release
    mode where it stops meaning that.  When wrapping is what you
    want, say so: `+%` is a different operator, defined modulo 2^64,
    and a reader can grep for the percent sign.                      *)

@@ -1,8 +1,8 @@
 MODULE C3Use ;
 
 (* Chapter 3.  A client sees only the definition: Temps.ToKelvin can
-   raise TooCold and the checker will not let this program pretend
-   otherwise -- the handler below is not politeness, it is what made
+   raise TooCold, and the checker will not let this program pretend
+   otherwise.  The handler below is not politeness; it is what made
    the module compile.  The payload binds by name and position, so
    the message can say WHICH value broke WHAT limit.                *)
 

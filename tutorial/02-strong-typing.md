@@ -1,28 +1,28 @@
 # 2 — Strong typing
 
-The width of a number is part of its meaning.  A scientist reads and
-writes numbers as bytes constantly — a netCDF variable, a zarr chunk,
-a column of doubles from an instrument — and the code reads them back
-correctly only if the width it expects is exactly the width on disk.
-When the type name leaves that width for the compiler to decide, the
-same program can read different bytes on different machines, and
-nothing warns you: from the second value on, the numbers are quietly
-wrong.
+The width of a number is part of its meaning.  A scientist
+constantly reads and writes numbers as bytes: a netCDF variable, a
+zarr chunk, a column of doubles from an instrument.  The code reads
+them back correctly only if the width it expects is exactly the
+width on disk.  When the type name leaves that width for the
+compiler to decide, the same program can read different bytes on
+different machines.  Nothing warns you: from the second value on,
+the numbers are quietly wrong.
 
-In M9 every numeric type names its width — `I8`..`I64`, `U8`..`U64`,
-`F32`, `F64`, `BYTE` — and **nothing converts implicitly**, not even
-the "safe" direction:
+In M9 every numeric type names its width: `I8`..`I64`,
+`U8`..`U64`, `F32`, `F64`, `BYTE`.  And **nothing converts
+implicitly**, not even in the "safe" direction:
 
 ```m9 X2Assign.m9
 MODULE X2Assign ;
 
 (* EXPECT-ERROR: cannot assign F64 to I64 *)
-(* Chapter 2, a program that must NOT compile.  There are no
-   implicit conversions, not even the "safe" widening ones: if two
+(* Chapter 2 shows a program that must NOT compile.  M9 has no
+   implicit conversions, not even the "safe" widening ones.  When two
    widths meet, the program says which one wins, or the checker
-   refuses.  gm2's LONGREAL was x87 long double striding 16 bytes
-   over 8-byte wire doubles -- silently.  This is the rule that
-   makes that failure uncompilable.                                 *)
+   refuses.  gm2's LONGREAL was x87 long double, and it silently
+   strode 16 bytes over 8-byte wire doubles.  This rule makes that
+   failure uncompilable.                                            *)
 
 IMPORT Io ;
 
@@ -41,19 +41,19 @@ END X2Assign.
 X2Assign.m9:19:8: X2Assign body: cannot assign F64 to I64 (no implicit conversions, par 2.1)
 ```
 
-That diagnostic is real — the gate compiles this file on every run
+That diagnostic is real.  The gate compiles this file on every run
 and requires exactly that refusal.  The assignment must be written
-as what it is: a conversion, `i := I64 (x)` — which brings us to
-the second rule.
+as what it is: a conversion, `i := I64 (x)`.  That brings us to the
+second rule.
 
 ## Conversions are calls, and they can fail
 
 `I64 (x)` is an ordinary-looking call with a checked meaning: if
 the value does not fit the target, it raises `ValueRange`.  This is
-not fussiness.  Turning a NaN into an integer has no honest answer,
-and the common ones are worse than a stop: one widely used array
-library silently returns the most negative integer, a number that
-then flows on into someone's mean and is never noticed.
+not fussiness.  A NaN has no honest integer value, and the common
+answers are worse than a stop.  One widely used array library
+silently returns the most negative integer.  That number then flows
+on into someone's mean and is never noticed.
 
 ```m9 C2Widths.m9
 MODULE C2Widths ;
@@ -70,11 +70,11 @@ MODULE C2Widths ;
 IMPORT Io ;
 
 PROCEDURE TryI32 (v: I64) =
-  (* narrows v to 32 bits, reporting instead of propagating.
+  (* TryI32 narrows v to 32 bits, reporting instead of propagating.
 
-       v -- any I64; whether it fits I32 is exactly what the
-            conversion checks.  This comment block is a DOCSTRING:
-            m9c --doc renders it, chapter 3 shows where.            *)
+       v -- any I64.  The conversion checks exactly whether it fits
+            I32.  This comment block is a DOCSTRING: m9c --doc
+            renders it, and chapter 3 shows where.                  *)
 VAR n : I32 ;
 BEGIN
   n := I32 (v) ;
@@ -116,24 +116,24 @@ I64 (NaN) raised ValueRange
 
 Note the shape: each probe procedure carries its own `EXCEPT`
 block, because a handler belongs to the frame that knows what the
-failure means there.  NaN travels freely between floats — that is
-IEEE arithmetic and it is right — and is stopped at the integer
+failure means there.  NaN travels freely between floats; that is
+IEEE arithmetic, and it is right.  It is stopped at the integer
 boundary, where "not a number" has no honest representation.
 
 ## The accounting is exhaustive
 
 A procedure that performs a checked conversion has two options:
-handle the failure, or declare it.  There is no third option in
-which the signature stays quiet:
+handle the failure, or declare it.  No third option lets the
+signature stay quiet:
 
 ```m9 X2Raises.m9
 MODULE X2Raises ;
 
 (* EXPECT-ERROR: unhandled RAISES ValueRange *)
-(* Chapter 2, a program that must NOT compile.  A checked conversion
-   can raise ValueRange, so a procedure that converts must either
-   handle it or declare it in RAISES -- the accounting is exhaustive,
-   which is what makes a signature's RAISES list trustworthy.       *)
+(* Chapter 2 shows a program that must NOT compile.  A checked
+   conversion can raise ValueRange, so a procedure that converts
+   must either handle it or declare it in RAISES.  The accounting is
+   exhaustive, and that makes a signature's RAISES list trustworthy. *)
 
 IMPORT Io ;
 
@@ -151,24 +151,24 @@ END X2Raises.
 X2Raises.m9:12:1: X2Raises.Narrow: unhandled RAISES ValueRange from I32 conversion
 ```
 
-This is what makes a RAISES list worth reading: it is not
-documentation that can rot, it is checked arithmetic over the call
-graph.  When chapter 3 shows a definition promising
-`RAISES TooCold`, that promise is proven, not asserted.
+This makes a RAISES list worth reading.  It is not documentation
+that can rot; it is checked arithmetic over the call graph.  When
+chapter 3 shows a definition promising `RAISES TooCold`, that
+promise is proven, not asserted.
 
 ## When you MEAN wraparound, say so
 
-Checked `+` raises `Overflow` — always, in every build, for the
+Checked `+` raises `Overflow`: always, in every build, for the
 reason chapter 1 gave.  Sometimes modular arithmetic is the point
 (hashing, checksums, random-number generators).  M9 spells that as
-different operators — `+%`, `-%`, `*%` — defined modulo 2^64, so
+different operators, `+%`, `-%` and `*%`, defined modulo 2^64.  So
 the intent is visible in the source and greppable forever:
 
 ```m9 C2Wrap.m9
 MODULE C2Wrap ;
 
 (* Chapter 2.  `+` on integers is CHECKED: overflow raises, always,
-   because that is what the operator means -- there is no release
+   because that is what the operator means.  There is no release
    mode where it stops meaning that.  When wrapping is what you
    want, say so: `+%` is a different operator, defined modulo 2^64,
    and a reader can grep for the percent sign.                      *)

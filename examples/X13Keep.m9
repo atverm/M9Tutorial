@@ -1,11 +1,11 @@
 MODULE X13Keep ;
 
 (* EXPECT-ERROR: undeclared retention: borrowed s reaches module state -- declare KEPT s (par 4.1) *)
-(* Chapter 13, a program that must NOT compile.  Remember stores its
-   argument in a module variable, so the string is KEPT beyond the
-   call -- and the heading does not say so.  A caller reading
+(* Chapter 13 shows a program that must NOT compile.  Remember
+   stores its argument in a module variable, so the string is KEPT
+   beyond the call.  The heading does not say so.  A caller reading
    `RO s: STR` is entitled to believe the call borrows s and lets it
-   go; the body breaks that promise, and the checker names the
+   go.  The body breaks that promise, and the checker names the
    parameter and the word that would fix it.                         *)
 
 IMPORT Io ;

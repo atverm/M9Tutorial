@@ -1,20 +1,20 @@
 MODULE C16Hash ;
 
-(* Chapter 16, second half: a hash sum over a whole file, computed in
-   parallel chunks -- and the one rule that makes a parallel sum
-   reproducible: the pieces are combined in a FIXED order.
+(* Chapter 16, second half, computes a hash sum over a whole file in
+   parallel chunks.  One rule makes a parallel sum reproducible: the
+   pieces are combined in a FIXED order.
 
    The hash is a polynomial over the bytes, h := h * P + byte, in
-   64-bit arithmetic that wraps -- M9 spells that `*%` and `+%`, the
-   operators that say out loud they are modular, where ordinary `*`
-   would raise Overflow.  Each worker hashes its own chunk into its
-   own slot of the result; the main thread then folds the slots in
-   chunk order.  Fold them in another order and the number changes,
-   which the program shows on purpose: the order is part of what the
+   64-bit arithmetic that wraps.  M9 spells that `*%` and `+%`, the
+   operators that say out loud they are modular; ordinary `*` would
+   raise Overflow.  Each worker hashes its own chunk into its own
+   slot of the result.  The main thread then folds the slots in
+   chunk order.  Fold them in another order and the number changes.
+   The program shows that on purpose: the order is part of what the
    hash IS, not an implementation detail.
 
    The shipped week is half a megabyte and hashes in a millisecond
-   either way; the chapter's timings come from the full 186 MB file,
+   either way.  The chapter's timings come from the full 186 MB file,
    given as an argument.                                             *)
 
 IMPORT Io ;
@@ -57,8 +57,8 @@ BEGIN
   WHILE w.n < want DO WAIT (w) END
 END AwaitAll ;
 
-(* the hash of one run of bytes.  `*%` and `+%` wrap mod 2^64 by
-   definition; the result is a bit pattern held in an I64. *)
+(* HashOf answers the hash of one run of bytes.  `*%` and `+%` wrap
+   mod 2^64 by definition; the result is a bit pattern in an I64. *)
 PROCEDURE HashOf (RO b: SLICE OF BYTE) : I64 =
 VAR
   h, i : I64 ;
@@ -89,7 +89,7 @@ BEGIN
   Finish (j.w)
 END Worker ;
 
-(* the fold: chunk hashes into one number, in chunk order *)
+(* Combine folds the chunk hashes into one number, in chunk order. *)
 PROCEDURE Combine (RO part: SLICE OF I64 ; reversed: BOOL) : I64 =
 VAR
   total, k : I64 ;
@@ -141,9 +141,9 @@ BEGIN
     AwaitAll (j.w, Chunks) ;
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
-    (* timings only for a file named on the command line: the shipped
-       week hashes in a millisecond, and a number that changes from
-       run to run has no place in gated output *)
+    (* Report timings only for a file named on the command line.  The
+       shipped week hashes in a millisecond, and a number that changes
+       from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
       Io.ErrLine ('hash: serial ' + Fmt.Fixed (serial, 3) + ' s, '
                   + Fmt.I64Str (Chunks) + ' threads ' + Fmt.Fixed (par, 3)

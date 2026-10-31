@@ -1,22 +1,24 @@
 # 15. Statistics: a regression, a test, and what a p-value means
 
-Same file as chapter 14, the same two columns, and this time no time
-series at all: 336 half-hours of net ecosystem exchange and air
-temperature from one July week, asked three questions. Does NEE
-depend on temperature? Do warm half-hours differ from cool ones? And
-what does the "p" in the answer actually mean — shown by drawing it,
-not by quoting it.
+This chapter reads the same file as chapter 14 and the same two
+columns, and this time builds no time series at all. It asks three
+questions of 336 half-hours of net ecosystem exchange and air
+temperature from one July week. Does NEE depend on temperature? Do
+warm half-hours differ from cool ones? And what does the "p" in the
+answer actually mean? The chapter shows that by drawing it, not by
+quoting it.
 
 ```m9 C15Stats.m9
 MODULE C15Stats ;
 
-(* Chapter 15: statistics on a week of eddy-covariance data -- a
+(* Chapter 15 does statistics on a week of eddy-covariance data: a
    regression of net ecosystem exchange on air temperature, a test of
    whether warm and cool half-hours differ, and a thousand draws from
    a normal distribution to show what a p-value actually says.
 
-   Same file as chapter 14 (the shipped week, or a path given on the
-   command line); this time only two columns and no time series.  *)
+   It reads the same file as chapter 14 (the shipped week, or a path
+   given on the command line).  This time it takes only two columns
+   and no time series.  *)
 
 IMPORT Io ;
 IMPORT Faults ;
@@ -30,8 +32,9 @@ CONST
   Trials = 1000 ;
   SeedValue = 20260906 ;       (* a fixed seed: the draws are reproducible *)
 
-(* the half-hours where BOTH values are present, as the two F64
-   slices the statistics take -- a gap in either drops the pair *)
+(* Pairs answers the half-hours where BOTH values are present, as
+   the two F64 slices the statistics take.  A gap in either drops
+   the pair. *)
 PROCEDURE Pairs (VAR pool: POOL ; RO ta, nee: SLICE OF F32 ;
                  VAR x, y: SLICE OF F64) RAISES ValueRange =
 VAR i, n : I64 ;
@@ -54,7 +57,8 @@ BEGIN
   END
 END Pairs ;
 
-(* the y values whose x lies below the cut, and those at or above it *)
+(* Split answers the y values whose x lies below the cut, and those
+   at or above it. *)
 PROCEDURE Split (VAR pool: POOL ; RO x, y: SLICE OF F64 ; cut: F64 ;
                  VAR lo, hi: SLICE OF F64) =
 VAR i, nl, nh : I64 ;
@@ -195,47 +199,48 @@ END C15Stats.
 `Stats.LinReg` answers the five numbers `scipy.stats.linregress`
 answers, and the repository holds it to scipy digit for digit. In
 July, at this forest, every extra degree of air temperature moves NEE
-by about −1.08 µmol m⁻² s⁻¹ — more negative, which in the flux
-convention is more uptake: warm hours are bright hours and the canopy
-is photosynthesising. Temperature explains about a fifth of the
-variance (r² ≈ 0.19); the rest is light, humidity, the time of day
-and the hour-to-hour noise of a turbulent measurement. The p-value,
-3.5 × 10⁻¹⁷, says a slope this large is not something 336 unrelated
-points produce by accident.
+by about −1.08 µmol m⁻² s⁻¹. More negative means more uptake in the
+flux convention: warm hours are bright hours, and the canopy is
+photosynthesising. Temperature explains about a fifth of the variance
+(r² ≈ 0.19). The rest is light, humidity, the time of day and the
+hour-to-hour noise of a turbulent measurement. The p-value,
+3.5 × 10⁻¹⁷, says that 336 unrelated points do not produce a slope
+this large by accident.
 
 `Pairs` is the small procedure that makes this honest: it keeps only
 the half-hours where *both* values are present, so a gap in either
 column drops the pair rather than becoming a zero. This week has no
-gaps; the full file does, and the program is written for the full
+gaps. The full file does, and the program is written for the full
 file.
 
 ## Warm against cool
 
-`Stats.Median` splits the week at 15.08 °C, and `Stats.TTest2` — the
-Welch form, which does not assume the two halves have the same spread
-— compares NEE above and below it. The means are −7.9 and +1.4: warm
-half-hours are net uptake, cool ones (the nights) net release. The
-statistic is t ≈ −10 on about 300 degrees of freedom, p ≈ 10⁻²⁰. The
-`dof` is fractional because Welch's correction makes it so; the
-program prints it with one decimal for exactly that reason.
+`Stats.Median` splits the week at 15.08 °C. `Stats.TTest2` compares
+NEE above and below it, in the Welch form, which does not assume the
+two halves have the same spread. The means are −7.9 and +1.4: warm
+half-hours are net uptake, and cool ones (the nights) net release.
+The statistic is t ≈ −10 on about 300 degrees of freedom,
+p ≈ 10⁻²⁰. The `dof` is fractional because Welch's correction makes
+it so; the program prints it with one decimal for exactly that
+reason.
 
 ## What a p-value means, by counting
 
 The last part is the one worth the chapter. `Stats.NormFit` fits a
 normal distribution to NEE (mean −3.23, spread 9.69). `Stats.Seed`
 starts a random stream from a fixed seed, and `Stats.Normal` draws
-from it — reproducibly, so the three draws printed are the same three
-on your machine, and the repository holds the stream bit for bit to
-an independent implementation.
+from it reproducibly. The three draws printed are the same three on
+your machine, and the repository holds the stream bit for bit to an
+independent implementation.
 
-Then the program makes a thousand *fake* weeks: each has NEE drawn
-from that normal — the right mean and spread — with no relation to
-temperature whatsoever, and each is regressed on the real
-temperatures. The question is how often a fake week produces a slope
-as steep as the real one. The answer is zero times in a thousand.
-That is a p-value obtained by counting, and it agrees with the
-formula's 3.5 × 10⁻¹⁷ in the only way it can: you would need
-something like 10¹⁷ fake weeks to see one.
+Then the program makes a thousand *fake* weeks. Each has NEE drawn
+from that normal, with the right mean and spread but no relation to
+temperature whatsoever. Each is regressed on the real temperatures.
+The question is how often a fake week produces a slope as steep as
+the real one. The answer is zero times in a thousand. That is a
+p-value obtained by counting, and it agrees with the formula's
+3.5 × 10⁻¹⁷ in the only way it can: you would need something like
+10¹⁷ fake weeks to see one.
 
 ```output C15Stats
 336 half-hours with both NEE and TA
@@ -260,12 +265,12 @@ in 1000 series with that mean and spread and no relation to TA, |slope| reached 
 
 Both p-values assume the 336 half-hours are independent, and they
 are not: a half-hour's NEE resembles the last half-hour's. The
-formula assumes independence; the counted version inherits the same
+formula assumes independence. The counted version inherits the same
 assumption, because the fake weeks are white noise. The honest
-reading is that the effect is real and large, and that the exact
-number of zeros in the p-value overstates the evidence. A proper
-treatment thins the series or models the autocorrelation — which is
-a different chapter, and the point of this one is that the program
-states what it assumed, so the reviewer can see it.
+reading: the effect is real and large, and the exact number of zeros
+in the p-value overstates the evidence. A proper treatment thins the
+series or models the autocorrelation. That is a different chapter.
+The point of this one is that the program states what it assumed,
+so the reviewer can see it.
 
 [← Previous: a big CSV file, and a CF NetCDF file from two of its columns](14-big-csv.md) · [Next: threads for computation, and what the cores actually give you →](16-threads-compute.md)

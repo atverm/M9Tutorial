@@ -1,10 +1,10 @@
 MODULE X4Escape ;
 
 (* EXPECT-ERROR: pool-interior pointer escapes its pool *)
-(* Chapter 4, a program that must NOT compile.  The pool is a LOCAL:
-   everything carved from it dies when the procedure returns, so a
-   pointer into it must not survive the frame.  In C this is the
-   classic return-of-a-dangling-pointer; here it is refused at
+(* Chapter 4 shows a program that must NOT compile.  The pool is a
+   LOCAL: everything carved from it dies when the procedure returns.
+   So a pointer into it must not survive the frame.  In C this is
+   the classic return-of-a-dangling-pointer.  Here it is refused at
    compile time, by name.                                           *)
 
 IMPORT Io ;

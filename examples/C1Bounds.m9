@@ -3,7 +3,7 @@ MODULE C1Bounds ;
 (* Chapter 1.  The bug that founded the language: a GNU Modula-2
    build at -O2 EXECUTED a[42] on an array of ten and printed
    "unreachable".  In M9 the check is part of what the program
-   MEANS, not a compiler flag: this loop runs off the end on
+   MEANS, not a compiler flag.  This loop runs off the end on
    purpose, and the access raises IndexError instead of reading
    whatever lies past the array.                                    *)
 

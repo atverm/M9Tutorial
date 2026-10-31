@@ -1,15 +1,15 @@
 MODULE C14Flux ;
 
-(* Chapter 14: a big CSV file, read in a flash, and two of its columns
-   written to a CF-compliant NetCDF file as a time series.
+(* Chapter 14 reads a big CSV file in a flash, and writes two of its
+   columns to a CF-compliant NetCDF file as a time series.
 
    The file is ICOS's FLUXNET half-hourly product for Hyltemossa
-   (SE-Htm): 244 columns, one row per half hour.  Given no argument
-   the program reads the one-week excerpt shipped beside it; given a
-   path it reads that instead -- the full 186 MB, 135,840-row file is
-   what the chapter's timings are measured on.
+   (SE-Htm): 244 columns, one row per half hour.  Given no argument,
+   the program reads the one-week excerpt shipped beside it.  Given a
+   path, it reads that instead.  The chapter's timings are measured
+   on the full 186 MB, 135,840-row file.
 
-   Three things this program says out loud that a script would leave
+   This program says three things out loud that a script would leave
    implicit: which columns it wants and what they ARE (the other 241
    are never parsed), what value means "missing", and that the
    timestamps are LOCAL STANDARD TIME, one hour ahead of UTC.       *)
@@ -30,8 +30,9 @@ CONST
   HalfHour = 1800 ;                   (* the file's resolution, seconds *)
   Utc1 = 3600.0 ;                     (* SE-Htm stamps are UTC+1 *)
 
-(* the values that are actually there: NaN is the missing value, and
-   a mean over a column with gaps is a mean over what is present *)
+(* Present answers the values that are actually there.  NaN is the
+   missing value, and a mean over a column with gaps is a mean over
+   what is present. *)
 PROCEDURE Present (RO v: SLICE OF F32) : SLICE OF F64
   RAISES ValueRange =
 VAR
@@ -53,8 +54,8 @@ BEGIN
   RETURN out
 END Present ;
 
-(* two columns are the same column when every value is the same
-   value -- and a gap equals a gap, which `=` on NaN never says *)
+(* Same: two columns are the same column when every value is the
+   same value.  A gap equals a gap, which `=` on NaN never says. *)
 PROCEDURE Same (RO a, b: SLICE OF F32) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -129,7 +130,7 @@ BEGIN
                   + Fmt.Fixed (Time.Elapsed (t0, t1), 3) + ' s')
     END ;
 
-    (* counted, not asserted: the columns that were actually parsed *)
+    (* Count, not assert, the columns that were actually parsed. *)
     parsed := 0 ;
     FOR c := 0 TO Csv.Cols (t) - 1 DO
       IF Csv.IsSet (t, c) THEN parsed := parsed + 1 END
@@ -144,7 +145,7 @@ BEGIN
     Io.WriteLine ('from ' + Stamp (stamps[0]) + ' to '
                   + Stamp (stamps[LEN (stamps) - 1]) + ' UTC') ;
 
-    (* what a CF reader will find beside each variable *)
+    (* A CF reader will find this beside each variable. *)
     Frame.SetMeta (pool, fr, 'NEE_VUT_REF',
                    'net ecosystem exchange of CO2, VUT reference',
                    'surface_upward_mole_flux_of_carbon_dioxide',
@@ -193,9 +194,10 @@ BEGIN
   | Frame.Unknown : Io.ErrLine ('frame: no such column') ; Io.Halt (1)
   | Frame.WrongType : Io.ErrLine ('frame: wrong column type') ; Io.Halt (1)
   | NetCDF.Error (opP, detailP, statusP) :
-      (* op, the library's own message, and its status NUMBER -- the
-         checker does not verify a handler's payload order, so it is
-         read off the EXCEPTION declaration, not remembered *)
+      (* The payload is op, the library's own message, and its status
+         NUMBER.  The checker does not verify a handler's payload
+         order, so it is read off the EXCEPTION declaration, not
+         remembered. *)
       op := opP ; detail := detailP ; st := statusP ;
       Io.ErrLine ('netcdf: ' + op + ': ' + detail + ' (status '
                   + Fmt.I64Str (st) + ')') ;

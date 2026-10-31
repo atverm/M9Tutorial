@@ -2,31 +2,31 @@
 
 The file is real: ICOS's FLUXNET half-hourly product for the
 Hyltemossa forest station in Sweden (SE-Htm), 244 columns, one row
-every half hour from January 2018 to September 2025 — 135,840 rows,
+every half hour from January 2018 to September 2025: 135,840 rows,
 186 MB. We want two of those columns, `NEE_VUT_REF` (the net ecosystem
 exchange of CO₂) and `TA_F` (air temperature), as a time series in a
 NetCDF file that any CF-aware tool will open correctly.
 
 The program below reads the whole file, keeps those two columns and
 the timestamp, writes the NetCDF, reads it back, and proves the round
-trip lost nothing. Given no argument it reads a one-week excerpt
-shipped beside it (3–9 July 2023, 336 rows, the same 244 columns);
-given a path it reads that. The timings in this chapter are from the
+trip lost nothing. Given no argument, it reads a one-week excerpt
+shipped beside it (3–9 July 2023, 336 rows, the same 244 columns).
+Given a path, it reads that. The timings in this chapter are from the
 full file.
 
 ```m9 C14Flux.m9
 MODULE C14Flux ;
 
-(* Chapter 14: a big CSV file, read in a flash, and two of its columns
-   written to a CF-compliant NetCDF file as a time series.
+(* Chapter 14 reads a big CSV file in a flash, and writes two of its
+   columns to a CF-compliant NetCDF file as a time series.
 
    The file is ICOS's FLUXNET half-hourly product for Hyltemossa
-   (SE-Htm): 244 columns, one row per half hour.  Given no argument
-   the program reads the one-week excerpt shipped beside it; given a
-   path it reads that instead -- the full 186 MB, 135,840-row file is
-   what the chapter's timings are measured on.
+   (SE-Htm): 244 columns, one row per half hour.  Given no argument,
+   the program reads the one-week excerpt shipped beside it.  Given a
+   path, it reads that instead.  The chapter's timings are measured
+   on the full 186 MB, 135,840-row file.
 
-   Three things this program says out loud that a script would leave
+   This program says three things out loud that a script would leave
    implicit: which columns it wants and what they ARE (the other 241
    are never parsed), what value means "missing", and that the
    timestamps are LOCAL STANDARD TIME, one hour ahead of UTC.       *)
@@ -47,8 +47,9 @@ CONST
   HalfHour = 1800 ;                   (* the file's resolution, seconds *)
   Utc1 = 3600.0 ;                     (* SE-Htm stamps are UTC+1 *)
 
-(* the values that are actually there: NaN is the missing value, and
-   a mean over a column with gaps is a mean over what is present *)
+(* Present answers the values that are actually there.  NaN is the
+   missing value, and a mean over a column with gaps is a mean over
+   what is present. *)
 PROCEDURE Present (RO v: SLICE OF F32) : SLICE OF F64
   RAISES ValueRange =
 VAR
@@ -70,8 +71,8 @@ BEGIN
   RETURN out
 END Present ;
 
-(* two columns are the same column when every value is the same
-   value -- and a gap equals a gap, which `=` on NaN never says *)
+(* Same: two columns are the same column when every value is the
+   same value.  A gap equals a gap, which `=` on NaN never says. *)
 PROCEDURE Same (RO a, b: SLICE OF F32) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -146,7 +147,7 @@ BEGIN
                   + Fmt.Fixed (Time.Elapsed (t0, t1), 3) + ' s')
     END ;
 
-    (* counted, not asserted: the columns that were actually parsed *)
+    (* Count, not assert, the columns that were actually parsed. *)
     parsed := 0 ;
     FOR c := 0 TO Csv.Cols (t) - 1 DO
       IF Csv.IsSet (t, c) THEN parsed := parsed + 1 END
@@ -161,7 +162,7 @@ BEGIN
     Io.WriteLine ('from ' + Stamp (stamps[0]) + ' to '
                   + Stamp (stamps[LEN (stamps) - 1]) + ' UTC') ;
 
-    (* what a CF reader will find beside each variable *)
+    (* A CF reader will find this beside each variable. *)
     Frame.SetMeta (pool, fr, 'NEE_VUT_REF',
                    'net ecosystem exchange of CO2, VUT reference',
                    'surface_upward_mole_flux_of_carbon_dioxide',
@@ -210,9 +211,10 @@ BEGIN
   | Frame.Unknown : Io.ErrLine ('frame: no such column') ; Io.Halt (1)
   | Frame.WrongType : Io.ErrLine ('frame: wrong column type') ; Io.Halt (1)
   | NetCDF.Error (opP, detailP, statusP) :
-      (* op, the library's own message, and its status NUMBER -- the
-         checker does not verify a handler's payload order, so it is
-         read off the EXCEPTION declaration, not remembered *)
+      (* The payload is op, the library's own message, and its status
+         NUMBER.  The checker does not verify a handler's payload
+         order, so it is read off the EXCEPTION declaration, not
+         remembered. *)
       op := opP ; detail := detailP ; st := statusP ;
       Io.ErrLine ('netcdf: ' + op + ': ' + detail + ' (status '
                   + Fmt.I64Str (st) + ')') ;
@@ -229,25 +231,24 @@ A script would do this in four lines and leave three things implicit.
 M9 makes you state them, and each one is a place the implicit version
 goes wrong.
 
-**Which columns, and what they are.** `Csv.SetStamp` for the
-timestamp, `Csv.SetReal` for the two values, and nothing at all for
-the other 241: a column nobody declares stays `Skip`, scanned past
-and never parsed. That default is not a convenience, it is a
-promise, and the promise was broken once: `Csv.Open` used to start
-every column as a real number whatever the definition said, and the
-first version of this program found out by writing a **136 MB**
-NetCDF file with 246 variables in it. The default is what the
-definition says now, and the file is 5.4 MB and holds exactly
+**Which columns, and what they are.** The program calls
+`Csv.SetStamp` for the timestamp, `Csv.SetReal` for the two values,
+and nothing at all for the other 241. A column nobody declares stays
+`Skip`, scanned past and never parsed. That default is not a
+convenience; it is a promise. The promise was broken once: `Csv.Open`
+used to start every column as a real number whatever the definition
+said. The first version of this program found out by writing a
+**136 MB** NetCDF file with 246 variables in it. The default is what
+the definition says now, and the file is 5.4 MB and holds exactly
 `time`, `time_bnds`, `TIMESTAMP_START`, `TA_F` and `NEE_VUT_REF`.
-The `parsed 3` on the
-first output line is *counted* from the table after the declarations,
-not asserted.
+The `parsed 3` on the first output line is *counted* from the table
+after the declarations, not asserted.
 
 **What "missing" means.** FLUXNET writes `-9999`. `opt.missing` says
-so, and from then on a gap is a NaN — which is what `Present` tests
-for before averaging, and what `Same` treats as equal to itself when
-comparing the round trip, because `NaN = NaN` is false and a naive
-comparison would report every gap as a difference.
+so, and from then on a gap is a NaN. `Present` tests for that before
+averaging. `Same` treats a NaN as equal to itself when comparing the
+round trip, because `NaN = NaN` is false, and a naive comparison
+would report every gap as a difference.
 
 **What time zone the stamps are in.** FLUXNET timestamps are *local
 standard time*, one hour ahead of UTC for Sweden, and the file does
@@ -256,23 +257,24 @@ every stamp as it is parsed, so the series is UTC before anything
 downstream sees it. The first line of output shows the consequence:
 the week that starts at `202307030000` in the file starts at
 `2023-07-02T23:00:00Z` in the series. Chapter 10 met the same trap
-from the other side — a CF time axis with no zone that *was not* UTC
-— and the honest fix is to convert on the way in, once, and state it.
+from the other side: a CF time axis with no zone that *was not* UTC.
+The honest fix is to convert on the way in, once, and state it.
 
 ## In a flash
 
-Parsing the full 186 MB with three columns declared takes **0.345 s**
-on this laptop — 565 MB per second, and about 130 MB/s of that is the
-part that actually parses numbers. With all 244 columns parsed it is
-0.78 s. `Csv` reads the file in one piece and scans it in place; the
-time is the scan, and skipping a column costs only the scan.
+The full 186 MB, with three columns declared, parses in **0.345 s**
+on this laptop: 565 MB per second. About 130 MB/s of that is the
+part that actually parses numbers. With all 244 columns parsed it
+takes 0.78 s. `Csv` reads the file in one piece and scans it in
+place. The time is the scan, and skipping a column costs only the
+scan.
 
 The NetCDF write and the read-back are `Frame.WriteTsNc` and
-`Frame.TsFromNc`, and the `SetMeta` calls before them are what make
-the file CF: a `standard_name` and a unit per variable, on top of the
-time axis, its bounds and the resolution `NewTs` was told. The
-repository's own gate runs `cfchecks` over files written this way and
-requires zero errors.
+`Frame.TsFromNc`. The `SetMeta` calls before them make the file CF:
+a `standard_name` and a unit per variable, on top of the time axis,
+its bounds and the resolution `NewTs` was told. The repository's own
+gate runs `cfchecks` over files written this way and requires zero
+errors.
 
 ```output C14Flux
 rows 336, columns in the file 244, parsed 3
@@ -285,14 +287,14 @@ both columns identical after the round trip: yes
 
 ## What to notice
 
-Every value survives the round trip — both columns are compared
-element by element after reading the file back, and the answer is
-`yes`. That is a cheap check to write and it is the one that matters:
-a file format is a promise about what comes back, not about what went
-in.
+Every value survives the round trip. The program compares both
+columns element by element after reading the file back, and the
+answer is `yes`. That check is cheap to write, and it is the one that
+matters: a file format is a promise about what comes back, not about
+what went in.
 
 This chapter's program links `libnetcdf`, which the repository's
-continuous integration does not have; the gate skips it out loud
+continuous integration does not have. The gate skips it out loud
 there rather than passing quietly, and runs it everywhere the library
 exists.
 

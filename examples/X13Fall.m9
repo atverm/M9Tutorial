@@ -1,13 +1,13 @@
 MODULE X13Fall ;
 
 (* EXPECT-ERROR: a function must RETURN or RAISE on every path *)
-(* Chapter 13, a program that must NOT compile.  Sign from C13Modes
-   with its ELSE removed: there is now a path -- v = 0.0 -- that
+(* Chapter 13 shows a program that must NOT compile.  It is Sign
+   from C13Modes with its ELSE removed.  Now one path, v = 0.0,
    reaches END with nothing to answer.  In Pascal or C that path
-   delivers whatever was in the result register; here the checker
+   delivers whatever was in the result register.  Here the checker
    names the function before it can.  The rule is structural, so a
-   reader can apply it by eye: an IF without ELSE can be passed, and
-   so can a WHILE or a FOR; a call never counts as an ending.       *)
+   reader can apply it by eye.  An IF without ELSE can be passed,
+   and so can a WHILE or a FOR.  A call never counts as an ending.  *)
 
 IMPORT Io ;
 

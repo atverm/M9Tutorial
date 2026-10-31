@@ -1,14 +1,16 @@
 MODULE C4Mem ;
 
-(* Chapter 4.  Memory, made visible: a frame owns storage unless a
-   named pool does, slices view it, VAR says who may change what, and
-   strings are slices of CHAR.  Every allocation in this program can
-   be pointed at and answered for -- there is no garbage collector
-   deciding later, and no free() to forget.
+IMPORT Text ;
 
-   The comments under the procedure headers are DOCSTRINGS: `m9c
-   --doc` renders them -- with their `name -- description` parameter
-   lines -- into the module's reference page, and the editor shows
+(* Chapter 4 makes memory visible.  A frame owns storage unless a
+   named pool does, slices view it, VAR says who may change what, and
+   strings are UTF-8 text.  Every allocation in this program can
+   be pointed at and answered for.  No garbage collector decides
+   later, and there is no free() to forget.
+
+   The comments under the procedure headers are DOCSTRINGS.  `m9c
+   --doc` renders them, with their `name -- description` parameter
+   lines, into the module's reference page, and the editor shows
    them on hover.  Documentation that lives anywhere else drifts.   *)
 
 IMPORT Io ;
@@ -16,16 +18,16 @@ IMPORT Fmt ;
 IMPORT DynStr ;
 
 PROCEDURE Spread (RO xs: SLICE OF F64) : F64 =
-  (* the spread (max - min) of a series, nothing kept.
+  (* Spread answers the spread (max - min) of a series, nothing kept.
 
        xs -- any slice: a whole array lent at the call site, or a
              SLICE (a, start, len) view of part of one.  RO means
              this procedure may read it and provably does not write
-             it -- the caller lends, nothing more.
+             it: the caller lends, nothing more.
 
-     No POOL parameter and no NEW: the docs/pools.md rule is that
-     the pool parameter appears exactly when the caller must say
-     where storage lives, and nothing here allocates at all.        *)
+     Spread takes no POOL parameter and has no NEW.  The docs/pools.md
+     rule is that the pool parameter appears exactly when the caller
+     must say where storage lives, and nothing here allocates at all. *)
 VAR
   i : I64 ;
   lo, hi : F64 ;
@@ -41,15 +43,15 @@ END Spread ;
 
 PROCEDURE Ramp (n: I64 ; start: F64) : SLICE OF F64
   RAISES ValueRange =
-  (* n values rising by one from start, answered as a new slice.
+  (* Ramp answers n values rising by one from start, as a new slice.
 
        n     -- how many.
        start -- the first of them.
 
      NEW (F64, n) names no pool, which is the default: the storage
-     comes from a FRAME -- and because this procedure ANSWERS the
-     slice, from its caller's, so the slice is still there when this
-     frame is gone and nobody had to be asked where to put it.      *)
+     comes from a FRAME.  This procedure ANSWERS the slice, so that
+     frame is its caller's.  The slice is still there when this frame
+     is gone, and nobody had to be asked where to put it.           *)
 VAR
   xs : SLICE OF F64 ;
   i : I64 ;
@@ -62,15 +64,15 @@ END Ramp ;
 PROCEDURE Describe (RO label: STR ;
                     RO xs: SLICE OF F64) : STR
   RAISES ValueRange =
-  (* one formatted line about a series, answered into the CALLER'S
-     frame.  The one NAMED pool of this program is here: DynStr.New
-     asks which pool its buffer lives in, so this frame declares a
-     scratch pool and says so.  The pool dies with the frame, and a
-     string that RETURNs is moved out on the way back, so nothing
-     here needs a pool in the signature.  RAISES ValueRange because
-     Fmt.Fixed can -- the accounting is chapter 2's, and it is why
-     this line is in the signature and not in a changelog.
-
+  (* Describe answers one formatted line about a series, into the
+     CALLER'S frame.  The one NAMED pool of this program is here:
+     DynStr.New asks which pool its buffer lives in, so this frame
+     declares a scratch pool and says so.  The pool dies with the
+     frame, and a string that RETURNs is moved out on the way back,
+     so nothing here needs a pool in the signature.  It RAISES
+     ValueRange because Fmt.Fixed can.  The accounting is chapter
+     2's, and it is why this line is in the signature and not in a
+     changelog.
        label -- prefixed verbatim.
        xs    -- the series; only read.                              *)
 VAR
@@ -93,11 +95,11 @@ BEGIN
 END Describe ;
 
 PROCEDURE Shift (VAR xs: SLICE OF F64 ; offset: F64) =
-  (* adds offset to every element, IN PLACE.
+  (* Shift adds offset to every element, IN PLACE.
 
        xs     -- VAR: this procedure writes through the slice, and
-                 the mode says so at both ends -- the caller can see
-                 the mutation coming at the call site, the checker
+                 the mode says so at both ends.  The caller can see
+                 the mutation coming at the call site; the checker
                  refuses the write without it.
        offset -- what to add.                                       *)
 VAR i : I64 ;
@@ -116,26 +118,27 @@ VAR
 BEGIN
   FOR i := 0 TO 7 DO a [i] := F64 (i) * 1.5 END ;
 
-  (* an ARRAY lends itself as a slice at a call site; SLICE takes a
-     checked sub-view -- same storage, no copy, bounds proven *)
+  (* An ARRAY lends itself as a slice at a call site.  SLICE takes
+     a checked sub-view: same storage, no copy, bounds proven. *)
   Io.WriteLine (Describe ('all', a)) ;
   Io.WriteLine (Describe ('mid', SLICE (a, 2, 4))) ;
 
-  (* a slice with no array behind it: Ramp carves it with NEW and
-     names no pool, so it lives in THIS frame -- the program's --
-     and is freed with it *)
+  (* This slice has no array behind it.  Ramp carves it with NEW and
+     names no pool, so it lives in THIS frame, the program's, and is
+     freed with it. *)
   more := Ramp (5, 100.0) ;
   Shift (more, 0.25) ;
   Io.WriteLine (Describe ('shifted', more)) ;
 
-  (* strings are SLICE OF CHAR; `+` composes into the frame's own
+  (* Strings are UTF-8 text.  `+` composes into the frame's own
      arena, which the compiler creates on the first `+` and frees at
-     the exit -- no pool to name, nothing to free, and a result that
-     RETURNs is moved to the caller's frame on the way out *)
+     the exit.  There is no pool to name and nothing to free.  A
+     result that RETURNs is moved to the caller's frame on the way
+     out. *)
   greeting := 'pools: ' + 'carve, use, ' + 'free as one' ;
   Io.WriteLine (greeting) ;
-  Io.WriteI64 (LEN (greeting)) ;
-  Io.WriteLine (' characters, and every one accounted for')
+  Io.WriteI64 (Text.BLen (greeting)) ;
+  Io.WriteLine (' bytes, and every one accounted for')
 EXCEPT
 | ValueRange :
     Io.ErrLine ('formatting failed') ;

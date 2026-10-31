@@ -1,8 +1,8 @@
 MODULE C13Modes ;
 
-(* Chapter 13: procedures -- how a call passes its arguments, how a
-   function answers on every path, and what each parameter MODE
-   promises.  The modes are the whole story: a mode is a promise the
+(* Chapter 13 covers procedures: how a call passes its arguments, how
+   a function answers on every path, and what each parameter MODE
+   promises.  The modes are the whole story.  A mode is a promise the
    compiler holds the body to, and the reviewer can read it off the
    heading without opening the body.
 
@@ -80,8 +80,8 @@ END Nearest ;
    the string outlives the call.  Without KEPT on s the checker
    refuses the assignment: a borrowed argument may not reach module
    state undeclared (par 4.1).  With it, the caller can read off the
-   heading that what it passes will be held on to.  RO beside it
-   because the caller passes a literal, and a literal is lent only
+   heading that what it passes will be held on to.  RO stands beside
+   it because the caller passes a literal, and a literal is lent only
    to a parameter that promises not to write it (par 2.4). --- *)
 VAR lastLabel : STR ;
 
@@ -114,8 +114,8 @@ BEGIN
                   + ', of 0.0: ' + Fmt.I64Str (Sign (0.0))
                   + ', of 7.0: ' + Fmt.I64Str (Sign (7.0))) ;
 
-    (* three points on the plane, and a query that has a neighbour
-       within 2, and one that has none *)
+    (* Make three points on the plane.  One query below has a
+       neighbour within 2, and one has none. *)
     pts := NEW (pool, PointRef, 3) ;
     FOR i := 0 TO 2 DO
       pts[i] := NEW (pool, Point) ;

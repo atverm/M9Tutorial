@@ -1,13 +1,13 @@
 MODULE C13Kinds ;
 
 (* Chapter 13.  An ENUMERATION is a type that is a fixed, named set of
-   values -- a quality flag, an instrument state, a category.  It is a
+   values: a quality flag, an instrument state, a category.  It is a
    case record with no payload, so the total-CASE rule from this
-   chapter applies: every value is covered, no ELSE, and a value added
-   to the type later breaks every CASE that forgot it -- at compile
-   time, not in a run.  NAME turns a value into its own identifier
-   text, and an ARRAY indexed by the type tallies one slot per value
-   with no ordinals written down anywhere. *)
+   chapter applies.  Every value is covered, with no ELSE.  A value
+   added to the type later breaks every CASE that forgot it, at
+   compile time, not in a run.  NAME turns a value into its own
+   identifier text.  An ARRAY indexed by the type tallies one slot
+   per value with no ordinals written down anywhere. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
@@ -15,9 +15,9 @@ IMPORT Fmt ;
 TYPE Quality = (Good, Suspect, Bad) ;
 
 PROCEDURE Keep (q: Quality) : BOOL =
-  (* which readings survive quality control.  Total over Quality: add
-     a fourth flag and this procedure will not compile until it says
-     what to do with it. *)
+  (* Keep says which readings survive quality control.  It is total
+     over Quality: add a fourth flag and this procedure will not
+     compile until it says what to do with it. *)
 BEGIN
   CASE q OF
   | Good : RETURN TRUE
