@@ -123,7 +123,7 @@ BEGIN
     opt.utcOffset := Utc1 ;           (* subtracted from every stamp *)
     t := Csv.Open (pool, path, opt) ;
 
-    Csv.SetStamp (t, 0, Csv.StampYmdHm) ;      (* TIMESTAMP_START *)
+    Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm)) ;      (* TIMESTAMP_START *)
     cNee := Csv.Find (t, 'NEE_VUT_REF') ;
     cTa := Csv.Find (t, 'TA_F') ;
     IF (cNee < 0) OR (cTa < 0) THEN
@@ -133,8 +133,8 @@ BEGIN
     (* every OTHER column stays Skip -- scanned past, never parsed,
        never carried.  Nothing needs saying about the 241 of them:
        a column nobody declared is a column nobody gets. *)
-    Csv.SetReal (t, cNee) ;
-    Csv.SetReal (t, cTa) ;
+    Csv.SetKind (t, cNee, Csv.Kind.Real) ;
+    Csv.SetKind (t, cTa, Csv.Kind.Real) ;
 
     t0 := Time.Now () ;
     Csv.Parse (pool, t) ;
@@ -171,7 +171,7 @@ BEGIN
                    'air temperature, gap-filled',
                    'air_temperature', 'degC') ;
 
-    ts := Frame.NewTs (pool, fr, stamps, HalfHour, Frame.ConvStart (),
+    ts := Frame.NewTs (pool, fr, stamps, HalfHour, Frame.Conv.AtStart,
                        'SE-Htm FLUXNET INTERIM half-hourly, L2') ;
 
     (* ---- 3. what is in the two columns ---- *)
@@ -232,8 +232,9 @@ M9 makes you state them, and each one is a place the implicit version
 goes wrong.
 
 **Which columns, and what they are.** The program calls
-`Csv.SetStamp` for the timestamp, `Csv.SetReal` for the two values,
-and nothing at all for the other 241. A column nobody declares stays
+`Csv.SetKind` with `Csv.Kind.Stamp` for the timestamp and with
+`Csv.Kind.Real` for the two values, and nothing at all for the
+other 241. A column nobody declares stays
 `Skip`, scanned past and never parsed. That default is not a
 convenience; it is a promise. The promise was broken once: `Csv.Open`
 used to start every column as a real number whatever the definition

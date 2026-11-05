@@ -30,8 +30,8 @@ BEGIN
   opt.missing := -9999.0 ;         (* the file's own convention *)
   opt.hasMissing := TRUE ;
   t := Csv.Open (pool, 'data/obs.csv', opt) ;
-  Csv.SetStamp (t, 0, Csv.StampYmdHm) ;
-  Csv.SetReal (t, 1) ;
+  Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm)) ;
+  Csv.SetKind (t, 1, Csv.Kind.Real) ;
   Csv.Parse (pool, t) ;
 
   stamp := Csv.ColStamp (t, 0) ;

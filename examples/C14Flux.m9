@@ -106,7 +106,7 @@ BEGIN
     opt.utcOffset := Utc1 ;           (* subtracted from every stamp *)
     t := Csv.Open (pool, path, opt) ;
 
-    Csv.SetStamp (t, 0, Csv.StampYmdHm) ;      (* TIMESTAMP_START *)
+    Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm)) ;      (* TIMESTAMP_START *)
     cNee := Csv.Find (t, 'NEE_VUT_REF') ;
     cTa := Csv.Find (t, 'TA_F') ;
     IF (cNee < 0) OR (cTa < 0) THEN
@@ -116,8 +116,8 @@ BEGIN
     (* every OTHER column stays Skip -- scanned past, never parsed,
        never carried.  Nothing needs saying about the 241 of them:
        a column nobody declared is a column nobody gets. *)
-    Csv.SetReal (t, cNee) ;
-    Csv.SetReal (t, cTa) ;
+    Csv.SetKind (t, cNee, Csv.Kind.Real) ;
+    Csv.SetKind (t, cTa, Csv.Kind.Real) ;
 
     t0 := Time.Now () ;
     Csv.Parse (pool, t) ;
@@ -154,7 +154,7 @@ BEGIN
                    'air temperature, gap-filled',
                    'air_temperature', 'degC') ;
 
-    ts := Frame.NewTs (pool, fr, stamps, HalfHour, Frame.ConvStart (),
+    ts := Frame.NewTs (pool, fr, stamps, HalfHour, Frame.Conv.AtStart,
                        'SE-Htm FLUXNET INTERIM half-hourly, L2') ;
 
     (* ---- 3. what is in the two columns ---- *)

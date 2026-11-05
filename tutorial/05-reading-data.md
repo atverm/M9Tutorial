@@ -61,8 +61,8 @@ BEGIN
   opt.missing := -9999.0 ;         (* the file's own convention *)
   opt.hasMissing := TRUE ;
   t := Csv.Open (pool, 'data/obs.csv', opt) ;
-  Csv.SetStamp (t, 0, Csv.StampYmdHm) ;
-  Csv.SetReal (t, 1) ;
+  Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm)) ;
+  Csv.SetKind (t, 1, Csv.Kind.Real) ;
   Csv.Parse (pool, t) ;
 
   stamp := Csv.ColStamp (t, 0) ;
@@ -128,7 +128,7 @@ Walk the pipeline:
   counts it out (chapter 6).  It satisfies one comparison, `x # x`, since NaN is
   the only value not equal to itself.  That makes the valid-data
   filter a single visible line.
-- **`Csv.SetStamp (t, 0, Csv.StampYmdHm)`**: the timestamp layout
+- **`Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm))`**: the timestamp layout
   is named, not sniffed, and parses into `Time.Instant`, seconds
   since the Unix epoch, UTC.  A time axis that is secretly local
   time is an hour of silent error for every user who assumed

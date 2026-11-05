@@ -53,17 +53,17 @@ BEGIN
   opt.missing := -9999.0 ;
   opt.hasMissing := TRUE ;
   t := Csv.Open (pool, 'data/obs.csv', opt) ;
-  Csv.SetStamp (t, 0, Csv.StampYmdHm) ;
-  Csv.SetReal (t, 1) ;
+  Csv.SetKind (t, 0, Csv.Kind.Stamp (Csv.StampYmdHm)) ;
+  Csv.SetKind (t, 1, Csv.Kind.Real) ;
   Csv.Parse (pool, t) ;
 
   fr := Frame.FromCsv (pool, t) ;
   ts := Frame.NewTs (pool, fr, Frame.ColI64 (fr, 'TIMESTAMP'),
-                     1800, Frame.ConvStart (), 'half-hourly TA') ;
+                     1800, Frame.Conv.AtStart, 'half-hourly TA') ;
 
   hows := NEW (pool, Frame.How, 2) ;
-  hows [0] := Frame.HowFirst () ;      (* TIMESTAMP *)
-  hows [1] := Frame.HowMean () ;       (* TA        *)
+  hows [0] := Frame.How.First ;      (* TIMESTAMP *)
+  hows [1] := Frame.How.Mean ;       (* TA        *)
   hr := Frame.Average (pool, ts, 3600, hows, 1) ;
 
   tm := Frame.TsTime (hr) ;
@@ -119,9 +119,9 @@ Nothing invents a value for the missing half hour.
 Two design points are worth pausing on:
 
 - **`hows` says what "average" means PER COLUMN.**  A mean of the
-  timestamps would be nonsense; flags want ALL/ANY (`HowLo` /
-  `HowHi` over booleans); counters want `HowSum`; text wants
-  `HowFirst` or refusal.  Each column takes one word, visible at
+  timestamps would be nonsense; flags want ALL/ANY (`How.Lo` /
+  `How.Hi` over booleans); counters want `How.Sum`; text wants
+  `How.First` or refusal.  Each column takes one word, visible at
   the call.
 - **Windows are epoch-aligned**: [00:00, 01:00), [01:00, 02:00).
   That is the same rule as polars' `group_by_dynamic`, and the

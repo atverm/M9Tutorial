@@ -103,8 +103,8 @@ BEGIN
       Io.ErrLine ('the file has no NEE_VUT_REF or no TA_F column') ;
       Io.Halt (1)
     END ;
-    Csv.SetReal (t, cNee) ;
-    Csv.SetReal (t, cTa) ;
+    Csv.SetKind (t, cNee, Csv.Kind.Real) ;
+    Csv.SetKind (t, cTa, Csv.Kind.Real) ;
     Csv.Parse (pool, t) ;
     ta := Csv.ColF32 (t, cTa) ;
     nee := Csv.ColF32 (t, cNee) ;

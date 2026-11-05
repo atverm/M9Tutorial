@@ -50,7 +50,7 @@ VAR c : I64 ;
 BEGIN
   c := Csv.Find (t, name) ;
   IF c >= 0 THEN
-    Csv.SetReal64 (t, c)
+    Csv.SetKind (t, c, Csv.Kind.Real64)
   ELSE
     Io.ErrLine ('the file has no column ' + name) ;
     Io.Halt (1)
