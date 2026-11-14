@@ -36,7 +36,8 @@ silicon** has an experimental Homebrew tap since 0.12.0, route 4.
 Experimental means the same compiler, runtime and library, with each
 platform's differences under one `#ifdef`.  It is verified on one
 machine of that kind rather than across a range.  The two routes say
-which chapters do not run there and why.
+which chapters do not run there and why.  Route 5 is a Docker image
+of the Debian package, for a container or a CI job.
 
 ## Route 1: the install package
 
@@ -153,6 +154,22 @@ distributions.  Intel Macs are untested.  Every chapter of this
 tutorial runs there, zarr over TLS and threads included.  If
 something breaks, that is worth reporting.  It is what the label is
 for.
+
+## Route 5: Docker
+
+The image [`atverm/m9`](https://hub.docker.com/r/atverm/m9) on Docker
+Hub is Debian 13 slim with route 1's Debian 13 package installed.  It
+also has blosc, zstd, zlib, netCDF and libpq, so every chapter's
+program links.  Its working directory is `/w`: mount your sources
+there.
+
+    docker run --rm -v "$PWD:/w" atverm/m9:0.27.0 m9c --run Hello.m9
+
+Each release pushes three tags: its full version, its series (the
+first two numbers) and `latest`.  Name the full version in a script,
+so that it builds the same way next year.
+The image is x86-64 only.  Before a release pushes it, the image
+compiles and runs a program, and builds one that uses Http over TLS.
 
 ## The first program
 
