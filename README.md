@@ -6,9 +6,9 @@ needs gcc and nothing else).  Its
 [release page](https://github.com/atverm/m9c/releases) carries the
 install packages for six Linux distributions (Ubuntu 24.04 and
 26.04, Debian 13, Fedora 43, Rocky 9, Arch), an **experimental**
-Windows zip since 0.8.0 and an **experimental** macOS Homebrew tap
-since 0.12.0.  Linux x86-64 is the primary platform; the other two
-are the same compiler verified on one machine of each kind.  The m9c
+Windows zip since 0.8.0 and a macOS Homebrew tap for Apple silicon
+since 0.12.0.  Linux and macOS on Apple silicon are the platforms;
+Windows is the same compiler verified on one machine.  The m9c
 repository also carries two [Claude Code skills](https://github.com/atverm/m9c/tree/main/skills)
 for writing M9 with an AI assistant, and chapter 0 says how to use
 them.
@@ -96,10 +96,10 @@ not work there yet: 14 (netCDF resolves paths its own way on
 Windows) and 17 (it runs `sort` and `uniq`).  Chapter 0 has the
 details.
 
-**macOS, experimental.**  `brew tap atverm/m9 && brew install m9`
+**macOS on Apple silicon.**  `brew tap atverm/m9 && brew install m9`
 builds the compiler on your Mac with Homebrew's gcc and installs
-OpenSSL, blosc and netCDF beside it.  It is verified on one
-Apple-silicon Mac, and every chapter runs there.  Chapter 0 has the
+OpenSSL, blosc and netCDF beside it.  Every gate and every chapter
+runs there; Intel Macs are untested.  Chapter 0 has the
 details.
 
 ## The first program

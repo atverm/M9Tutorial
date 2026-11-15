@@ -32,10 +32,11 @@ one: install packages for Ubuntu 24.04 and 26.04, Debian 13, Fedora
 any Linux that has gcc.  Every gate the language is held to runs
 there, on every push.  **Windows 10 and 11 (x86-64)** has an
 experimental zip since 0.8.0, route 3 below.  **macOS on Apple
-silicon** has an experimental Homebrew tap since 0.12.0, route 4.
-Experimental means the same compiler, runtime and library, with each
-platform's differences under one `#ifdef`.  It is verified on one
-machine of that kind rather than across a range.  The two routes say
+silicon** has a Homebrew tap since 0.12.0, route 4; every gate and
+every chapter runs there.  Experimental means the same compiler,
+runtime and library, with each platform's differences under one
+`#ifdef`, verified on one machine of that kind rather than across a
+range.  The two routes say
 which chapters do not run there and why.  Route 5 is a Docker image
 of the Debian package, for a container or a CI job.
 
@@ -129,7 +130,7 @@ no `uniq`.  The rest runs, netCDF, zarr over TLS and threads included
 (measured on a Windows 11 machine, 2026-10-18).  If something else
 breaks, that is worth reporting.  It is what the label is for.
 
-## Route 4: macOS — experimental
+## Route 4: macOS (Apple silicon)
 
 On a Mac the compiler comes through [Homebrew](https://brew.sh), from
 the same source tarball the Linux packages are built from:
@@ -146,14 +147,11 @@ Homebrew's gcc, the arrangement the Windows zip has with the gcc in
 its box.  `brew install` says where the VS Code extension is, and
 gives the one `ln -s` that links it.
 
-**Experimental means experimental.**  It is the same compiler.  Every
-macOS difference in the runtime and the driver is under `__APPLE__`
-or `macos`, and the *generated* C never names a platform.  It is
-verified on one Apple-silicon Mac, where Linux is tested across six
-distributions.  Intel Macs are untested.  Every chapter of this
-tutorial runs there, zarr over TLS and threads included.  If
-something breaks, that is worth reporting.  It is what the label is
-for.
+It is the same compiler.  Every macOS difference in the runtime and
+the driver is under `__APPLE__` or `macos`, and the *generated* C
+never names a platform.  The whole gate round runs on Apple silicon,
+and so does every chapter of this tutorial, zarr over TLS and
+threads included.  Intel Macs are untested.
 
 ## Route 5: Docker
 
