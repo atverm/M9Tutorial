@@ -402,8 +402,14 @@ END X13Write.
 
 ```refusal X13Write
 X13Write.m9:20:3: X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
+  fix: declare the parameter VAR p: PTR T -- the mutable-handle idiom  [m9c --explain write-through-value-ptr]
 X13Write.m9:21:3: X13Write.Zero: cannot write through a value parameter: p is a shared borrow (take VAR, par 4.1)
+  fix: declare the parameter VAR p: PTR T -- the mutable-handle idiom  [m9c --explain write-through-value-ptr]
 ```
+
+The line under each refusal is the fix m9c finds for it (since 0.28.1).
+`m9c --explain write-through-value-ptr` prints the whole entry: the
+cause, the fix, and the smallest program that earns the refusal.
 
 And this is the retention rule, on a borrowed string that reaches
 module state:
