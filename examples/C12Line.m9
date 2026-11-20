@@ -1,0 +1,53 @@
+MODULE C12Line ;
+
+(* Chapter 12 writes a line that holds values.  An interpolation
+   literal is a string with holes: $'...${e}...'.  Each hole holds
+   one expression, and a number may end in a format.  The checker
+   holds the format against the type of the value. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+CONST
+  Station = 'SE-Htm' ;
+
+VAR
+  rows, gaps : I64 ;
+  mean, tiny : F64 ;
+  flag : CHAR ;
+  done : BOOL ;
+
+BEGIN
+  BEGIN
+    rows := 336 ;
+    gaps := 7 ;
+    mean := -2.4567 ;
+    tiny := 0.00001234 ;
+    flag := 'U' ;
+    done := gaps = 0 ;
+
+    (* The same line twice: by hand, and with holes. *)
+    Io.WriteLine ('station ' + Station + ': ' + Fmt.I64Str (rows) + ' rows, mean '
+                  + Fmt.Fixed (mean, 2)) ;
+    Io.WriteLine ($'station ${Station}: ${rows} rows, mean ${mean:.2}') ;
+
+    (* A hole takes a string, a CHAR, an integer, a BOOL or a real as
+       it is.  A real without a format is its shortest exact form. *)
+    Io.WriteLine ($'flag ${flag}, complete ${done}, mean ${mean}') ;
+
+    (* A hole holds any one expression. *)
+    Io.WriteLine ($'${rows - gaps} of ${rows} present, ${100 * gaps DIV rows} % missing') ;
+
+    (* An integer takes a width, and a zero before it to fill. *)
+    Io.WriteLine ($'[${rows:8}] [${rows:08}] [${gaps:2}]') ;
+
+    (* A real takes decimals, a width before them, and e for the
+       exponent form.  A lone e gives every digit. *)
+    Io.WriteLine ($'[${mean:.2}] [${mean:9.2}] [${tiny:.2e}] [${tiny:e}]') ;
+
+    (* Braces and a lone $ are text, so JSON reads as it is. *)
+    Io.WriteLine ($'{"station":"${Station}","rows":${rows},"cost":"$5"}')
+  EXCEPT
+  | ValueRange : Io.ErrLine ('a value out of range')
+  END
+END C12Line.

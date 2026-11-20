@@ -22,7 +22,6 @@ MODULE C15Stats ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Math ;
 IMPORT Stats ;
@@ -120,35 +119,31 @@ BEGIN
     ta := Csv.ColF32 (t, cTa) ;
     nee := Csv.ColF32 (t, cNee) ;
     Pairs (pool, ta, nee, x, y) ;
-    Io.WriteLine (Fmt.I64Str (LEN (x)) + ' half-hours with both NEE and TA') ;
+    Io.WriteLine ($'${LEN (x)} half-hours with both NEE and TA') ;
 
     (* ---- 1. the regression: NEE = intercept + slope * TA ---- *)
     reg := Stats.LinReg (x, y) ;
     Io.WriteLine ('') ;
     Io.WriteLine ('NEE on TA, least squares:') ;
-    Io.WriteLine ('  slope      ' + Fmt.Fixed (reg.slope, 4)
-                  + ' umol m-2 s-1 per degC  (stderr '
-                  + Fmt.Fixed (reg.stderr, 4) + ')') ;
-    Io.WriteLine ('  intercept  ' + Fmt.Fixed (reg.intercept, 3)
-                  + ' umol m-2 s-1') ;
-    Io.WriteLine ('  r          ' + Fmt.Fixed (reg.r, 3)
-                  + '   r^2 ' + Fmt.Fixed (reg.r * reg.r, 3)) ;
-    Io.WriteLine ('  p          ' + Fmt.Sci (reg.p, 2)
-                  + '  (two-sided, against slope = 0)') ;
+    Io.WriteLine ($'  slope      ${reg.slope:.4} umol m-2 s-1 '
+                  + $'per degC  (stderr ${reg.stderr:.4})') ;
+    Io.WriteLine ($'  intercept  ${reg.intercept:.3} umol m-2 s-1') ;
+    Io.WriteLine ($'  r          ${reg.r:.3}   r^2 ${reg.r * reg.r:.3}') ;
+    Io.WriteLine ($'  p          ${reg.p:.2e}  '
+                  + '(two-sided, against slope = 0)') ;
 
     (* ---- 2. warm half-hours against cool ones: Welch's t ---- *)
     cut := Stats.Median (x) ;
     Split (pool, x, y, cut, cool, warm) ;
     tt := Stats.TTest2 (warm, cool) ;
     Io.WriteLine ('') ;
-    Io.WriteLine ('NEE when TA is above its median ' + Fmt.Fixed (cut, 2)
-                  + ' degC against below it:') ;
-    Io.WriteLine ('  warm mean  ' + Fmt.Fixed (Stats.Mean (warm), 3)
-                  + '  (n ' + Fmt.I64Str (LEN (warm)) + ')') ;
-    Io.WriteLine ('  cool mean  ' + Fmt.Fixed (Stats.Mean (cool), 3)
-                  + '  (n ' + Fmt.I64Str (LEN (cool)) + ')') ;
-    Io.WriteLine ('  t ' + Fmt.Fixed (tt.t, 2) + '  dof '
-                  + Fmt.Fixed (tt.dof, 1) + '  p ' + Fmt.Sci (tt.p, 2)) ;
+    Io.WriteLine ('NEE when TA is above its median '
+                  + $'${cut:.2} degC against below it:') ;
+    Io.WriteLine ($'  warm mean  ${Stats.Mean (warm):.3}'
+                  + $'  (n ${LEN (warm)})') ;
+    Io.WriteLine ($'  cool mean  ${Stats.Mean (cool):.3}'
+                  + $'  (n ${LEN (cool)})') ;
+    Io.WriteLine ($'  t ${tt.t:.2}  dof ${tt.dof:.1}  p ${tt.p:.2e}') ;
 
     (* ---- 3. what the p-value means, by drawing it ----
        Fit a normal to NEE, then make a thousand series with that mean
@@ -158,11 +153,11 @@ BEGIN
     fit := Stats.NormFit (y) ;
     st := Stats.Seed (SeedValue) ;
     Io.WriteLine ('') ;
-    Io.WriteLine ('normal fit of NEE: mu ' + Fmt.Fixed (fit.mu, 3)
-                  + ', sigma ' + Fmt.Fixed (fit.sigma, 3)) ;
+    Io.WriteLine ($'normal fit of NEE: mu ${fit.mu:.3}'
+                  + $', sigma ${fit.sigma:.3}') ;
     Io.Write ('three draws from it:') ;
     FOR i := 1 TO 3 DO
-      Io.Write (' ' + Fmt.Fixed (fit.mu + fit.sigma * Stats.Normal (st), 3))
+      Io.Write ($' ${fit.mu + fit.sigma * Stats.Normal (st):.3}')
     END ;
     Io.WriteLine ('') ;
 
@@ -176,14 +171,13 @@ BEGIN
       sim := Stats.LinReg (x, ysim) ;
       IF Abs (sim.slope) >= observed THEN hits := hits + 1 END
     END ;
-    Io.WriteLine ('in ' + Fmt.I64Str (Trials)
-                  + ' series with that mean and spread and no relation to TA,'
-                  + ' |slope| reached ' + Fmt.Fixed (observed, 4) + ': '
-                  + Fmt.I64Str (hits) + ' times')
+    Io.WriteLine ($'in ${Trials} series with that mean and '
+                  + 'spread and no relation to TA, |slope| '
+                  + $'reached ${observed:.4}: ${hits} times')
   EXCEPT
   | Csv.ParseError (whatP, lineP, colP) :
       what := whatP ; ln := lineP ;
-      Io.ErrLine ('CSV: ' + what + ' at line ' + Fmt.I64Str (ln)) ;
+      Io.ErrLine ($'CSV: ${what} at line ${ln}') ;
       Io.Halt (1)
   | Csv.RangeError : Io.ErrLine ('CSV: a value out of range') ; Io.Halt (1)
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)

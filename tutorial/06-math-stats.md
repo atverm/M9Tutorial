@@ -121,7 +121,6 @@ MODULE C6Nan ;
 
 IMPORT Io ;
 IMPORT Stats ;
-IMPORT Fmt ;
 
 VAR
   xs, gaps : ARRAY 3 OF F64 ;
@@ -133,16 +132,15 @@ BEGIN
   xs [1] := NaN ;                   (* a gap, as data has *)
   xs [2] := 3.0 ;
   m := Stats.Mean (xs) ;
-  Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3) + ' over ' +
-                Fmt.I64Str (Stats.Count (xs)) + ' of ' +
-                Fmt.I64Str (LEN (xs)) + ' values') ;
+  Io.WriteLine ($'mean = ${m:.3} over ${Stats.Count (xs)}'
+                + $' of ${LEN (xs)} values') ;
   FOR i := 0 TO 2 DO gaps [i] := NaN END ;
   m := Stats.Mean (gaps) ;
-  Io.WriteLine ('mean = ' + Fmt.Fixed (m, 3))
+  Io.WriteLine ($'mean = ${m:.3}')
 EXCEPT
 | Stats.TooFew (got, need) :
-    Io.WriteLine ('nothing but gaps: ' + Fmt.I64Str (got) +
-                  ' values, and a mean needs ' + Fmt.I64Str (need))
+    Io.WriteLine ($'nothing but gaps: ${got} values, '
+                  + $'and a mean needs ${need}')
 | ValueRange :
     Io.WriteLine ('formatting failed')
 END C6Nan.
@@ -152,6 +150,12 @@ END C6Nan.
 mean = 2.000 over 2 of 3 values
 nothing but gaps: 0 values, and a mean needs 1
 ```
+
+(The lines are written as **interpolation literals**: `$'...'` is a
+string with holes, `${m:.3}` is `m` with three decimals and
+`${LEN (xs)}` an integer as it is.  Chapter 12 has the whole of it.
+The chapters before this one build such a line from `+` and `Fmt`
+calls, which is what a hole stands for.)
 
 The gap is skipped, and counted out.  A library can give two answers
 here that someone regrets.  One is a NaN mean (correct IEEE, useless

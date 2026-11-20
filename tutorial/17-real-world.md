@@ -63,7 +63,6 @@ IMPORT Text ;
 IMPORT System ;
 IMPORT DynStr ;
 IMPORT Io ;
-IMPORT Fmt ;
 
 CONST
   DefaultTop = 5 ;
@@ -130,7 +129,7 @@ BEGIN
   IF Text.BLen (s) = 0 THEN RETURN 0 - 1 END ;
   v := 0 ;
   FOR i := 0 TO Text.BLen (s) - 1 DO
-    IF (I64 (Text.BAt (s, i)) < ORD ('0')) OR (I64 (Text.BAt (s, i)) > ORD ('9')) THEN RETURN 0 - 1 END ;
+    IF (Text.BAt (s, i) < '0') OR (Text.BAt (s, i) > '9') THEN RETURN 0 - 1 END ;
     v := v * 10 + (I64 (Text.BAt (s, i)) - ORD ('0'))
   END ;
   RETURN v
@@ -150,7 +149,7 @@ BEGIN
   IF Text.BLen (s) = 0 THEN RETURN DefaultTop END ;
   n := ParseInt (s) ;
   IF n >= 0 THEN RETURN n END ;
-  Io.ErrLine ('--top is not a count; showing ' + Fmt.I64Str (DefaultTop)) ;
+  Io.ErrLine ($'--top is not a count; showing ${DefaultTop}') ;
   RETURN DefaultTop
 END TopWanted ;
 
@@ -164,14 +163,11 @@ PROCEDURE Stage (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
                  RO input: STR) : STR
   RAISES ValueRange, Io.IOError =
 VAR
-  env : SLICE OF STR ;
   r : System.Result ;
 BEGIN
-  env := NEW (pool, STR, 1) ;
-  env[0] := 'LC_ALL=C' ;
-  r := System.Exec (pool, prog, args, input, env) ;
+  r := System.Exec (pool, prog, args, input, ['LC_ALL=C']) ;
   IF r.status # 0 THEN
-    Io.ErrLine (prog + ' exited with status ' + Fmt.I64Str (r.status)) ;
+    Io.ErrLine ($'${prog} exited with status ${r.status}') ;
     IF Text.BLen (r.err) > 0 THEN Io.ErrLine (r.err) END ;
     Io.Halt (1)
   END ;
@@ -188,15 +184,14 @@ VAR
   i, j, shown, count : I64 ;
   word : STR ;
 BEGIN
-  Io.WriteLine ('the ' + Fmt.I64Str (top)
-                + ' most frequent words in the passage:') ;
+  Io.WriteLine ($'the ${top} most frequent words in the passage:') ;
   i := 0 ;
   shown := 0 ;
   WHILE (i < Text.BLen (counts)) AND (shown < top) DO
     WHILE (i < Text.BLen (counts)) AND (Text.BIs (counts, i, ' ')) DO i := i + 1 END ;
     count := 0 ;
-    WHILE (i < Text.BLen (counts)) AND (I64 (Text.BAt (counts, i)) >= ORD ('0'))
-          AND (I64 (Text.BAt (counts, i)) <= ORD ('9')) DO
+    WHILE (i < Text.BLen (counts)) AND (Text.BAt (counts, i) >= '0')
+          AND (Text.BAt (counts, i) <= '9') DO
       count := count * 10 + (I64 (Text.BAt (counts, i)) - ORD ('0')) ;
       i := i + 1
     END ;
@@ -206,8 +201,7 @@ BEGIN
     word := SLICE (counts, i, j - i) ;
     IF Text.BLen (word) > 0 THEN
       shown := shown + 1 ;
-      Io.WriteLine ('  ' + Fmt.I64Str (shown) + '. ' + word
-                    + '  (' + Fmt.I64Str (count) + ')')
+      Io.WriteLine ($'  ${shown}. ${word}  (${count})')
     END ;
     i := j ;
     IF (i < Text.BLen (counts)) AND (Text.BIs (counts, i, 0AC)) THEN i := i + 1 END
@@ -217,7 +211,6 @@ END Report ;
 VAR
   pool : POOL ;
   top : I64 ;
-  none, uniqArgs, sortArgs : SLICE OF STR ;
   words, sorted, counted, ranked : STR ;
 
 BEGIN
@@ -228,21 +221,14 @@ BEGIN
        The first stage reads it on its stdin. *)
     words := WordsOf (Passage ()) ;
 
-    none := NEW (pool, STR, 0) ;
-    uniqArgs := NEW (pool, STR, 1) ;
-    uniqArgs[0] := '-c' ;
-    sortArgs := NEW (pool, STR, 2) ;
-    sortArgs[0] := '-k1,1nr' ;
-    sortArgs[1] := '-k2,2' ;
-
     (* Run three stages, each its own program, each checked.  The
        output of one is the stdin of the next: an M9 string, not a
        temp file.  The second sort ranks by count (numeric,
        descending) then by the word, so ties have a defined order and
        every run is identical down to the byte. *)
-    sorted := Stage (pool, 'sort', none, words) ;
-    counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
-    ranked := Stage (pool, 'sort', sortArgs, counted) ;
+    sorted := Stage (pool, 'sort', NEW (STR, 0), words) ;
+    counted := Stage (pool, 'uniq', ['-c'], sorted) ;
+    ranked := Stage (pool, 'sort', ['-k1,1nr', '-k2,2'], counted) ;
 
     Report (ranked, top)
   EXCEPT
@@ -283,9 +269,19 @@ and everything it wrote to `err`. So a stage's output is an ordinary
 M9 string, and the pipe between two tools is that string handed to the
 next stage as its input:
 
-    sorted  := Stage (pool, 'sort', none, words) ;
-    counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
-    ranked  := Stage (pool, 'sort', sortArgs, counted) ;
+    sorted  := Stage (pool, 'sort', NEW (STR, 0), words) ;
+    counted := Stage (pool, 'uniq', ['-c'], sorted) ;
+    ranked  := Stage (pool, 'sort', ['-k1,1nr', '-k2,2'], counted) ;
+
+A stage's arguments are a slice of strings, and each call writes its
+own **in brackets**: `['-c']` is a slice of one string, made for
+this call and gone after it.  Its elements are any expressions of
+one type.  It may be handed to a parameter that only reads it (`RO
+args` here) and nowhere else, so nothing can keep a slice that is
+about to go.  The first `sort` takes no arguments.  The brackets
+need an element to know the type from, so the empty slice is
+written `NEW (STR, 0)`.  (Before 0.29 each list was a variable, a
+`NEW` and an assignment for every element.)
 
 There is no `counts.txt` on disk. `sorted` and `counted` are values,
 and you can see the handoff in the program instead of inferring it
@@ -293,10 +289,10 @@ from a shell line.
 
 And every stage's status is **checked**, inside `Stage`:
 
-    r := System.Exec (pool, prog, args, input, env) ;
+    r := System.Exec (pool, prog, args, input, ['LC_ALL=C']) ;
     IF r.status # 0 THEN
-      Io.ErrLine (prog + ' exited with status ' + Fmt.I64Str (r.status)) ;
-      IF LEN (r.err) > 0 THEN Io.ErrLine (r.err) END ;
+      Io.ErrLine ($'${prog} exited with status ${r.status}') ;
+      IF Text.BLen (r.err) > 0 THEN Io.ErrLine (r.err) END ;
       Io.Halt (1)
     END ;
 
@@ -330,7 +326,7 @@ usually the wrong one. `System.ExecWithin` is `Exec` with a deadline:
 
     r := System.ExecWithin (pool, prog, args, input, env, 10.0) ;
     IF r.stopped THEN
-      Io.ErrLine (prog + ' was still running after ten seconds') ;
+      Io.ErrLine ($'${prog} was still running after ten seconds') ;
       Io.ErrLine (r.out)            (* what it had printed by then *)
     END ;
 
@@ -349,11 +345,9 @@ otherwise take the whole tutorial down with it.
 
 ## The environment is a boundary, and boundaries lie unless you pin them
 
-Look at how `Stage` builds its environment:
+Look at the environment `Stage` hands over:
 
-    env := NEW (pool, STR, 1) ;
-    env[0] := 'LC_ALL=C' ;
-    r := System.Exec (pool, prog, args, input, env) ;
+    r := System.Exec (pool, prog, args, input, ['LC_ALL=C']) ;
 
 Sort order is locale-dependent: on a machine set to a French or
 Swedish locale, `sort` orders letters by that locale's rules. So the
@@ -393,7 +387,7 @@ The count of rows to show comes in as a **named option**, and
     IF LEN (s) = 0 THEN RETURN DefaultTop END ;
     n := ParseInt (s) ;
     IF n >= 0 THEN RETURN n END ;
-    Io.ErrLine ('--top is not a count; showing ' + Fmt.I64Str (DefaultTop)) ;
+    Io.ErrLine ($'--top is not a count; showing ${DefaultTop}') ;
     RETURN DefaultTop
 
 `System.Value ('--top', '')` reads the text after `--top=` in the
@@ -428,6 +422,21 @@ as the word. Most of living in the real world is parsing a real
 tool's real output, padding, separators and all, instead of wishing
 it were tidier. The bytes are what the tool sends; the program
 adapts to them, not the other way around.
+
+The digits are read as bytes, since a tool's output is bytes:
+
+    WHILE (i < Text.BLen (counts)) AND (Text.BAt (counts, i) >= '0')
+          AND (Text.BAt (counts, i) <= '9') DO
+      count := count * 10 + (I64 (Text.BAt (counts, i)) - ORD ('0')) ;
+
+`Text.BAt` answers a `BYTE`, and `'0'` is a character.  The two are
+different types, and M9 converts nothing by itself.  A comparison is
+the one place they meet: a character **literal** that is ASCII
+stands for its byte beside a `BYTE`, in `=`, `#`, the four orders
+and a `CASE` label.  `'é'` there is refused, since it is two bytes
+in a file.  The arithmetic on the next line still says what it does,
+`I64 (...)` and `ORD ('0')`: a byte is not a number until the
+program says so.
 
 ## The pipeline is a program you can read
 

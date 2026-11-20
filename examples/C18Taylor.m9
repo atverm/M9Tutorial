@@ -138,8 +138,7 @@ BEGIN
   Csv.Parse (pool, t) ;
   sw := Csv.ColF64 (t, cSw) ;
   ta := Csv.ColF64 (t, cTa) ;
-  Io.WriteLine (Fmt.I64Str (LEN (sw)) + ' half-hours, '
-                + Fmt.I64Str (LEN (sw) DIV PerDay) + ' days') ;
+  Io.WriteLine ($'${LEN (sw)} half-hours, ${LEN (sw) DIV PerDay} days') ;
   Io.WriteLine ('') ;
 
   (* ---- each flux against each model: one ROW a model, one
@@ -173,26 +172,25 @@ BEGIN
   IF worst < 1.0E-12 THEN
     Io.WriteLine ('rms * rms = ratio * ratio + 1 - 2 * ratio * corr, every row')
   ELSE
-    Io.WriteLine ('the three numbers DISAGREE by ' + Fmt.Sci (worst, 2))
+    Io.WriteLine ($'the three numbers DISAGREE by ${worst:.2e}')
   END ;
 
   (* ---- the picture ---- *)
   svg := Plot.RenderTaylor ('A week of fluxes against four guesses',
                             ratio, corr, Models, Fluxes) ;
   Io.WriteFile (Figure, svg) ;
-  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (Text.BLen (svg)) + ' bytes')
+  Io.WriteLine ($'wrote ${Figure}, ${Text.BLen (svg)} bytes')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Stats.TooFew (got, need) :
-    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.ErrLine ($'too few values: ${got}') ;
     Io.Halt (1)
 | Faults.BadArg (what) :
     msg := what ;

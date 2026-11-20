@@ -1,0 +1,7 @@
+station SE-Htm: 336 rows, mean -2.46
+station SE-Htm: 336 rows, mean -2.46
+flag U, complete FALSE, mean -2.4567
+329 of 336 present, 2 % missing
+[     336] [00000336] [ 7]
+[-2.46] [    -2.46] [1.23e-5] [1.2340000000000000e-5]
+{"station":"SE-Htm","rows":336,"cost":"$5"}

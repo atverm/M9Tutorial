@@ -1,0 +1,17 @@
+MODULE X12Hole ;
+
+(* EXPECT-ERROR: an integer in a hole takes a width and no decimals *)
+(* Chapter 12 shows a program that must NOT compile.  A format in a
+   hole is held against the type of the value.  Decimals belong to a
+   real.  An integer has none, so ${rows:.2} is a mistake about what
+   rows is, and the checker says so before the program runs.         *)
+
+IMPORT Io ;
+
+VAR
+  rows : I64 ;
+
+BEGIN
+  rows := 336 ;
+  Io.WriteLine ($'rows ${rows:.2}')      (* refused: an integer has no decimals *)
+END X12Hole.

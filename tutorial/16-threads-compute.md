@@ -43,7 +43,6 @@ MODULE C16Mat ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Mat ;
 IMPORT Time ;
 
@@ -238,14 +237,12 @@ BEGIN
     (* Report timings only when asked (any argument).  A number that
        changes from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('product: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'product: serial ${serial:.3} s, ${Bands} '
+                  + $'bands ${par:.3} s, ${serial / par:.1}x')
     END ;
     IF Identical (prodS, mj.prod) THEN
-      Io.WriteLine ('product of two ' + Fmt.I64Str (N) + 'x' + Fmt.I64Str (N)
-                    + ' matrices in ' + Fmt.I64Str (Bands)
-                    + ' bands: identical to the serial product, bit for bit')
+      Io.WriteLine ($'product of two ${N}x${N} matrices in ${Bands} bands: '
+                    + 'identical to the serial product, bit for bit')
     ELSE
       Io.WriteLine ('product: the bands DIFFER from the serial product')
     END ;
@@ -272,14 +269,12 @@ BEGIN
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('inverse: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'inverse: serial ${serial:.3} s, ${Bands} '
+                  + $'bands ${par:.3} s, ${serial / par:.1}x')
     END ;
     IF Identical (invS, ij.inv) THEN
-      Io.WriteLine ('inverse of a ' + Fmt.I64Str (N) + 'x' + Fmt.I64Str (N)
-                    + ' SPD matrix in ' + Fmt.I64Str (Bands)
-                    + ' column bands: identical to SpdInverse, bit for bit')
+      Io.WriteLine ($'inverse of a ${N}x${N} SPD matrix in ${Bands} '
+                    + 'column bands: identical to SpdInverse, bit for bit')
     ELSE
       Io.WriteLine ('inverse: the bands DIFFER from SpdInverse')
     END ;
@@ -343,7 +338,6 @@ MODULE C16Hash ;
    given as an argument.                                             *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 IMPORT Time ;
 
 CONST
@@ -443,8 +437,7 @@ BEGIN
     path := Default ;
     IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
     bytes := Io.ReadFileBytes (pool, path) ;
-    Io.WriteLine ('file: ' + Fmt.I64Str (LEN (bytes)) + ' bytes in '
-                  + Fmt.I64Str (Chunks) + ' chunks') ;
+    Io.WriteLine ($'file: ${LEN (bytes)} bytes in ${Chunks} chunks') ;
 
     (* ---- one thread: the chunks in order, then the fold ---- *)
     serialPart := NEW (pool, I64, Chunks) ;
@@ -470,21 +463,21 @@ BEGIN
        shipped week hashes in a millisecond, and a number that changes
        from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('hash: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Chunks) + ' threads ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'hash: serial ${serial:.3} s, ${Chunks} '
+                  + $'threads ${par:.3} s, ${serial / par:.1}x')
     END ;
 
-    Io.WriteLine ('hash sum, one thread:     ' + Fmt.I64Str (Combine (serialPart, FALSE))) ;
-    Io.WriteLine ('hash sum, eight threads:  ' + Fmt.I64Str (Combine (j.part, FALSE))) ;
+    Io.WriteLine ('hash sum, one thread:     '
+                  + $'${Combine (serialPart, FALSE)}') ;
+    Io.WriteLine ($'hash sum, eight threads:  ${Combine (j.part, FALSE)}') ;
     IF Combine (serialPart, FALSE) = Combine (j.part, FALSE) THEN
       Io.WriteLine ('identical: yes')
     ELSE
       Io.WriteLine ('identical: NO')
     END ;
     Io.WriteLine ('the same slots folded in reverse order: '
-                  + Fmt.I64Str (Combine (j.part, TRUE))
-                  + '  -- a different number, so the order is part of the definition')
+                  + $'${Combine (j.part, TRUE)}  -- a different '
+                  + 'number, so the order is part of the definition')
   EXCEPT
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)
@@ -575,5 +568,14 @@ say so. The row range is a contract you hold, the same one chapter
 11 states as *every worker writes at its own index*. The
 bit-identical comparison at the end is how the program checks it
 kept it.
+
+A thread is the right size for a band of a matrix. For thousands of
+small things that mostly wait for each other, M9 has the `TASK`:
+the same call, `TASK (proc, arg)`, run by a few threads that pass
+the tasks between them, so ten thousand of them cost the system no
+ten thousand threads. This tutorial does not teach it yet. The
+[flock example](https://github.com/atverm/m9c/tree/main/examples/flock)
+in the compiler's repository does: three thousand birds, a task
+each.
 
 [← Previous: statistics, a regression, a test, and what a p-value means](15-statistics.md) · [Next: living in the real world →](17-real-world.md)

@@ -19,7 +19,6 @@ MODULE C16Mat ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Mat ;
 IMPORT Time ;
 
@@ -214,14 +213,12 @@ BEGIN
     (* Report timings only when asked (any argument).  A number that
        changes from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('product: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'product: serial ${serial:.3} s, ${Bands} '
+                  + $'bands ${par:.3} s, ${serial / par:.1}x')
     END ;
     IF Identical (prodS, mj.prod) THEN
-      Io.WriteLine ('product of two ' + Fmt.I64Str (N) + 'x' + Fmt.I64Str (N)
-                    + ' matrices in ' + Fmt.I64Str (Bands)
-                    + ' bands: identical to the serial product, bit for bit')
+      Io.WriteLine ($'product of two ${N}x${N} matrices in ${Bands} bands: '
+                    + 'identical to the serial product, bit for bit')
     ELSE
       Io.WriteLine ('product: the bands DIFFER from the serial product')
     END ;
@@ -248,14 +245,12 @@ BEGIN
     t1 := Time.Now () ;
     par := Time.Elapsed (t0, t1) ;
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('inverse: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Bands) + ' bands ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'inverse: serial ${serial:.3} s, ${Bands} '
+                  + $'bands ${par:.3} s, ${serial / par:.1}x')
     END ;
     IF Identical (invS, ij.inv) THEN
-      Io.WriteLine ('inverse of a ' + Fmt.I64Str (N) + 'x' + Fmt.I64Str (N)
-                    + ' SPD matrix in ' + Fmt.I64Str (Bands)
-                    + ' column bands: identical to SpdInverse, bit for bit')
+      Io.WriteLine ($'inverse of a ${N}x${N} SPD matrix in ${Bands} '
+                    + 'column bands: identical to SpdInverse, bit for bit')
     ELSE
       Io.WriteLine ('inverse: the bands DIFFER from SpdInverse')
     END ;

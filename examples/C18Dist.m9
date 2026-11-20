@@ -27,6 +27,7 @@ CONST
   Bins = 8 ;                   (* of equal probability under the normal *)
   Fitted = 2 ;                 (* parameters estimated from the sample:
                                   the mean and the standard deviation *)
+  Dof = Bins - 1 - Fitted ;    (* the test's degrees of freedom *)
   Trials = 1000 ;
   SeedValue = 20261003 ;       (* a fixed seed: the draws are reproducible *)
 
@@ -120,12 +121,11 @@ BEGIN
      residuals: the t distribution with n - 2 degrees of freedom ---- *)
   reg := Stats.LinReg (sw, nee) ;
   tq := Stats.TPpf (0.975, F64 (n - 2)) ;
-  Io.WriteLine ('NEE on light: slope ' + Fmt.Fixed (reg.slope, 4)
+  Io.WriteLine ($'NEE on light: slope ${reg.slope:.4}'
                 + ' umol m-2 s-1 per W m-2') ;
-  Io.WriteLine ('  95% interval ' + Fmt.Fixed (reg.slope - tq * reg.stderr, 4)
-                + ' .. ' + Fmt.Fixed (reg.slope + tq * reg.stderr, 4)
-                + '  (t quantile ' + Fmt.Fixed (tq, 4) + ', '
-                + Fmt.I64Str (n - 2) + ' degrees of freedom)') ;
+  Io.WriteLine ($'  95% interval ${reg.slope - tq * reg.stderr:.4} .. '
+                + $'${reg.slope + tq * reg.stderr:.4}  (t quantile '
+                + $'${tq:.4}, ${n - 2} degrees of freedom)') ;
 
   (* ---- 2. the residuals against the normal, bin by bin ---- *)
   res := NEW (pool, F64, n) ;
@@ -140,25 +140,22 @@ BEGIN
   count := NEW (pool, I64, Bins) ;
   Test (res, edges, z, count, x2, p) ;
   Io.WriteLine ('') ;
-  Io.WriteLine ('the ' + Fmt.I64Str (n) + ' residuals, standardised, in '
-                + Fmt.I64Str (Bins) + ' bins a normal fills equally ('
-                + Fmt.I64Str (n DIV Bins) + ' each):') ;
+  Io.WriteLine ($'the ${n} residuals, standardised, in ${Bins} bins '
+                + $'a normal fills equally (${n DIV Bins} each):') ;
   FOR k := 0 TO Bins - 1 DO
     IF k = 0 THEN lo := '  -inf' ELSE lo := Fmt.FixedPad (edges[k - 1], 6, 2) END ;
     IF k = Bins - 1 THEN hi := '   inf' ELSE hi := Fmt.FixedPad (edges[k], 6, 2) END ;
-    Io.WriteLine (lo + ' ..' + hi + Fmt.I64Pad (count[k], 5, FALSE) + '  '
-                  + Bar (count[k] DIV 2))
+    Io.WriteLine ($'${lo} ..${hi}${count[k]:5}  ${Bar (count[k] DIV 2)}')
   END ;
-  Io.WriteLine ('chi-square ' + Fmt.Fixed (x2, 2) + ' with '
-                + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom, p = '
-                + Fmt.Sci (p, 1)) ;
+  Io.WriteLine ($'chi-square ${x2:.2} with ${Dof} degrees of freedom, '
+                + $'p = ${p:.1e}') ;
 
   (* ---- the tails, where a normal model's intervals live ---- *)
   Io.WriteLine ('2.5th and 97.5th percentiles: '
-                + Fmt.Fixed (Stats.Percentile (z, 2.5), 3) + ' and '
-                + Fmt.Fixed (Stats.Percentile (z, 97.5), 3)
-                + '  (a normal: ' + Fmt.Fixed (Stats.NormalPpf (0.025), 3)
-                + ' and ' + Fmt.Fixed (Stats.NormalPpf (0.975), 3) + ')') ;
+                + $'${Stats.Percentile (z, 2.5):.3} and '
+                + $'${Stats.Percentile (z, 97.5):.3}  (a '
+                + $'normal: ${Stats.NormalPpf (0.025):.3} '
+                + $'and ${Stats.NormalPpf (0.975):.3})') ;
 
   (* ---- 3. the same test on samples that ARE normal ---- *)
   st := Stats.Seed (SeedValue) ;
@@ -173,24 +170,20 @@ BEGIN
     IF 1.0 - Stats.Chi2Cdf (x2, F64 (Bins - 1)) < 0.05 THEN loose := loose + 1 END
   END ;
   Io.WriteLine ('') ;
-  Io.WriteLine (Fmt.I64Str (Trials) + ' normal samples of ' + Fmt.I64Str (n)
-                + ', rejected at p < 0.05:') ;
-  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom '
-                + Fmt.I64Pad (cries, 4, FALSE) + ' times') ;
-  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1) + ' degrees of freedom '
-                + Fmt.I64Pad (loose, 4, FALSE) + ' times')
+  Io.WriteLine ($'${Trials} normal samples of ${n}, rejected at p < 0.05:') ;
+  Io.WriteLine ($'  with ${Dof} degrees of freedom ${cries:4} times') ;
+  Io.WriteLine ($'  with ${Bins - 1} degrees of freedom ${loose:4} times')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Stats.TooFew (got, need) :
-    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.ErrLine ($'too few values: ${got}') ;
     Io.Halt (1)
 | Faults.BadArg (what) :
     msg := what ;

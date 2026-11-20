@@ -24,7 +24,6 @@ IMPORT Text ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Math ;
 IMPORT Mat ;
@@ -131,21 +130,19 @@ BEGIN
   xt := Mat.Transpose (pool, x) ;
   xtx := Mat.MulM (pool, xt, x) ;
   xtxInv := Mat.Inverse (pool, xtx) ;
-  Io.WriteLine ('NEE on light, temperature and VPD: '
-                + Fmt.I64Str (n) + ' half-hours, ' + Fmt.I64Str (p)
-                + ' coefficients') ;
+  Io.WriteLine ($'NEE on light, temperature and VPD: ${n}'
+                + $' half-hours, ${p} coefficients') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('term           estimate   stderr        t       p') ;
   FOR j := 0 TO p - 1 DO
     se := Math.Sqrt (s2 * Mat.Get (xtxInv, j, j)) ;
     tv := Mat.Get (b, j, 0) / se ;
     pv := 2.0 * Stats.TTail (Math.Fabs (tv), F64 (n - p)) ;
-    Io.WriteLine (PadTo (Terms[j], 12) + Fmt.FixedPad (Mat.Get (b, j, 0), 11, 4)
-                  + Fmt.FixedPad (se, 9, 4) + Fmt.FixedPad (tv, 9, 2)
-                  + '  ' + Fmt.Sci (pv, 1) + '  ' + Units[j])
+    Io.WriteLine ($'${PadTo (Terms[j], 12)}${Mat.Get (b, j, 0):11.4}'
+                  + $'${se:9.4}${tv:9.2}  ${pv:.1e}  ${Units[j]}')
   END ;
   Io.WriteLine ('residual standard deviation '
-                + Fmt.Fixed (Math.Sqrt (s2), 3) + ' umol m-2 s-1') ;
+                + $'${Math.Sqrt (s2):.3} umol m-2 s-1') ;
 
   (* ---- 3. the same b two other ways ---- *)
   b2 := Mat.MulM (pool, xtxInv, Mat.MulM (pool, xt, yv)) ;
@@ -156,12 +153,14 @@ BEGIN
   IF RelDiff (b, b2) < 1.0E-8 THEN
     Io.WriteLine ("(X'X)^-1 X'y agrees with LstSq to 8 digits")
   ELSE
-    Io.WriteLine ("(X'X)^-1 X'y DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b2), 2))
+    Io.WriteLine ("(X'X)^-1 X'y DISAGREES with "
+                  + $"LstSq: ${RelDiff (b, b2):.2e}")
   END ;
   IF RelDiff (b, b3) < 1.0E-8 THEN
     Io.WriteLine ("Solve (X'X, X'y) agrees with LstSq to 8 digits")
   ELSE
-    Io.WriteLine ("Solve (X'X, X'y) DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b3), 2))
+    Io.WriteLine ("Solve (X'X, X'y) DISAGREES with "
+                  + $"LstSq: ${RelDiff (b, b3):.2e}")
   END ;
 
   (* ---- why LstSq does not take that road: the condition number,
@@ -170,8 +169,8 @@ BEGIN
   sv := NEW (pool, F64, p) ;
   Mat.Svd (pool, x, u, sv, vt) ;
   cond := sv[0] / sv[p - 1] ;
-  Io.WriteLine ('condition of X    ' + Fmt.Sci (cond, 1)) ;
-  Io.WriteLine ("condition of X'X  " + Fmt.Sci (cond * cond, 1)) ;
+  Io.WriteLine ($'condition of X    ${cond:.1e}') ;
+  Io.WriteLine ($"condition of X'X  ${cond * cond:.1e}") ;
 
   (* ---- 4. one column too many ---- *)
   x5 := Mat.New (pool, n, p + 1) ;
@@ -185,21 +184,20 @@ BEGIN
     Io.WriteLine ('temperature twice: LstSq answered -- it should not have')
   EXCEPT
   | Mat.Singular (col) :
-      Io.WriteLine ('temperature twice: refused, column ' + Fmt.I64Str (col)
-                    + ' (counting from 0) adds nothing to the columns before it')
+      Io.WriteLine ($'temperature twice: refused, column ${col} (counting '
+                    + 'from 0) adds nothing to the columns before it')
   END
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Mat.Singular (col) :
-    Io.ErrLine ('the design has no unique fit: column ' + Fmt.I64Str (col)) ;
+    Io.ErrLine ($'the design has no unique fit: column ${col}') ;
     Io.Halt (1)
 | Mat.NoConverge (sweeps) :
     Io.ErrLine ('the singular values did not settle') ; Io.Halt (1)

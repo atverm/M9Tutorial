@@ -60,6 +60,19 @@ chapter does not run on Windows.
 17. [Living in the real world: parameters, external programs, and pipelines](17-real-world.md)
 18. [Evaluating a model: a Taylor diagram, a regression as matrices, and its residuals](18-model-evaluation.md)
 
+## Whole programs to read
+
+The chapters' examples are small on purpose. Three larger programs
+live in the compiler's repository, each a web page served by M9:
+
+- [flock](https://github.com/atverm/m9c/tree/main/examples/flock):
+  a flock of three thousand sparrows, one `TASK` (a micro thread) a
+  bird. It is the example of tasks, which no chapter covers yet.
+- [paddle](https://github.com/atverm/m9c/tree/main/examples/paddle):
+  a bat-and-ball game against the computer.
+- [snake](https://github.com/atverm/m9c/tree/main/examples/snake):
+  the grid game.
+
 ## Running the examples yourself
 
 Chapter 0 covers installation (a Debian package, or `./build.sh`

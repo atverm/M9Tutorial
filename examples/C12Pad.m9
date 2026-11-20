@@ -84,10 +84,9 @@ BEGIN
       s := PadLeft ('x', Big) ;
       t1 := Time.Now () ;
       fast := Time.Elapsed (t0, t1) ;
-      Io.ErrLine ('padding to ' + Fmt.I64Str (Big) + ': PadSlow '
-                  + Fmt.Fixed (slow, 3) + ' s, PadLeft '
-                  + Fmt.Fixed (fast, 4) + ' s') ;
-      Io.ErrLine ('LEN of the result: ' + Fmt.I64Str (Text.BLen (s)))
+      Io.ErrLine ($'padding to ${Big}: PadSlow ${slow:.3}'
+                  + $' s, PadLeft ${fast:.4} s') ;
+      Io.ErrLine ($'LEN of the result: ${Text.BLen (s)}')
     END
   EXCEPT
   | ValueRange : Io.ErrLine ('a value out of range')

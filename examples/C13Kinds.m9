@@ -10,7 +10,6 @@ MODULE C13Kinds ;
    per value with no ordinals written down anywhere. *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 
 TYPE Quality = (Good, Suspect, Bad) ;
 
@@ -49,7 +48,7 @@ BEGIN
   END ;
 
   FOR q := Quality.Good TO Quality.Bad DO
-    Io.WriteLine (NAME (q) + ': ' + Fmt.I64Str (tally[q]))
+    Io.WriteLine ($'${NAME (q)}: ${tally[q]}')
   END ;
-  Io.WriteLine ('kept ' + Fmt.I64Str (kept) + ' of 8')
+  Io.WriteLine ($'kept ${kept} of 8')
 END C13Kinds.

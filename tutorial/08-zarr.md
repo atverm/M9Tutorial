@@ -35,7 +35,6 @@ MODULE C8Zarr ;
    silent bug but an uncompilable one.                              *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 IMPORT ZarrStore ;
 
 VAR
@@ -70,11 +69,11 @@ BEGIN
   Io.WriteI64 (ZarrStore.Extent (a, 1)) ;
   Io.WriteLine ('') ;
 
-  Io.WriteLine ('co2[0,0]   = ' + Fmt.Fixed (At (a, 0, 0), 10)) ;
-  Io.WriteLine ('co2[99,49] = ' + Fmt.Fixed (At (a, 99, 49), 10)) ;
+  Io.WriteLine ($'co2[0,0]   = ${At (a, 0, 0):.10}') ;
+  Io.WriteLine ($'co2[99,49] = ${At (a, 99, 49):.10}') ;
   x := At (a, 10, 5) ;
   IF x = x THEN
-    Io.WriteLine ('co2[10,5]  = ' + Fmt.Fixed (x, 10))
+    Io.WriteLine ($'co2[10,5]  = ${x:.10}')
   ELSE
     Io.WriteLine ('co2[10,5]  is a gap (deleted chunk, NaN fill)')
   END ;

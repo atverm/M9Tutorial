@@ -169,8 +169,7 @@ BEGIN
   Csv.Parse (pool, t) ;
   sw := Csv.ColF64 (t, cSw) ;
   ta := Csv.ColF64 (t, cTa) ;
-  Io.WriteLine (Fmt.I64Str (LEN (sw)) + ' half-hours, '
-                + Fmt.I64Str (LEN (sw) DIV PerDay) + ' days') ;
+  Io.WriteLine ($'${LEN (sw)} half-hours, ${LEN (sw) DIV PerDay} days') ;
   Io.WriteLine ('') ;
 
   (* ---- each flux against each model: one ROW a model, one
@@ -204,26 +203,25 @@ BEGIN
   IF worst < 1.0E-12 THEN
     Io.WriteLine ('rms * rms = ratio * ratio + 1 - 2 * ratio * corr, every row')
   ELSE
-    Io.WriteLine ('the three numbers DISAGREE by ' + Fmt.Sci (worst, 2))
+    Io.WriteLine ($'the three numbers DISAGREE by ${worst:.2e}')
   END ;
 
   (* ---- the picture ---- *)
   svg := Plot.RenderTaylor ('A week of fluxes against four guesses',
                             ratio, corr, Models, Fluxes) ;
   Io.WriteFile (Figure, svg) ;
-  Io.WriteLine ('wrote ' + Figure + ', ' + Fmt.I64Str (Text.BLen (svg)) + ' bytes')
+  Io.WriteLine ($'wrote ${Figure}, ${Text.BLen (svg)} bytes')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Stats.TooFew (got, need) :
-    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.ErrLine ($'too few values: ${got}') ;
     Io.Halt (1)
 | Faults.BadArg (what) :
     msg := what ;
@@ -335,7 +333,6 @@ IMPORT Text ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Math ;
 IMPORT Mat ;
@@ -442,21 +439,19 @@ BEGIN
   xt := Mat.Transpose (pool, x) ;
   xtx := Mat.MulM (pool, xt, x) ;
   xtxInv := Mat.Inverse (pool, xtx) ;
-  Io.WriteLine ('NEE on light, temperature and VPD: '
-                + Fmt.I64Str (n) + ' half-hours, ' + Fmt.I64Str (p)
-                + ' coefficients') ;
+  Io.WriteLine ($'NEE on light, temperature and VPD: ${n}'
+                + $' half-hours, ${p} coefficients') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('term           estimate   stderr        t       p') ;
   FOR j := 0 TO p - 1 DO
     se := Math.Sqrt (s2 * Mat.Get (xtxInv, j, j)) ;
     tv := Mat.Get (b, j, 0) / se ;
     pv := 2.0 * Stats.TTail (Math.Fabs (tv), F64 (n - p)) ;
-    Io.WriteLine (PadTo (Terms[j], 12) + Fmt.FixedPad (Mat.Get (b, j, 0), 11, 4)
-                  + Fmt.FixedPad (se, 9, 4) + Fmt.FixedPad (tv, 9, 2)
-                  + '  ' + Fmt.Sci (pv, 1) + '  ' + Units[j])
+    Io.WriteLine ($'${PadTo (Terms[j], 12)}${Mat.Get (b, j, 0):11.4}'
+                  + $'${se:9.4}${tv:9.2}  ${pv:.1e}  ${Units[j]}')
   END ;
   Io.WriteLine ('residual standard deviation '
-                + Fmt.Fixed (Math.Sqrt (s2), 3) + ' umol m-2 s-1') ;
+                + $'${Math.Sqrt (s2):.3} umol m-2 s-1') ;
 
   (* ---- 3. the same b two other ways ---- *)
   b2 := Mat.MulM (pool, xtxInv, Mat.MulM (pool, xt, yv)) ;
@@ -467,12 +462,14 @@ BEGIN
   IF RelDiff (b, b2) < 1.0E-8 THEN
     Io.WriteLine ("(X'X)^-1 X'y agrees with LstSq to 8 digits")
   ELSE
-    Io.WriteLine ("(X'X)^-1 X'y DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b2), 2))
+    Io.WriteLine ("(X'X)^-1 X'y DISAGREES with "
+                  + $"LstSq: ${RelDiff (b, b2):.2e}")
   END ;
   IF RelDiff (b, b3) < 1.0E-8 THEN
     Io.WriteLine ("Solve (X'X, X'y) agrees with LstSq to 8 digits")
   ELSE
-    Io.WriteLine ("Solve (X'X, X'y) DISAGREES with LstSq: " + Fmt.Sci (RelDiff (b, b3), 2))
+    Io.WriteLine ("Solve (X'X, X'y) DISAGREES with "
+                  + $"LstSq: ${RelDiff (b, b3):.2e}")
   END ;
 
   (* ---- why LstSq does not take that road: the condition number,
@@ -481,8 +478,8 @@ BEGIN
   sv := NEW (pool, F64, p) ;
   Mat.Svd (pool, x, u, sv, vt) ;
   cond := sv[0] / sv[p - 1] ;
-  Io.WriteLine ('condition of X    ' + Fmt.Sci (cond, 1)) ;
-  Io.WriteLine ("condition of X'X  " + Fmt.Sci (cond * cond, 1)) ;
+  Io.WriteLine ($'condition of X    ${cond:.1e}') ;
+  Io.WriteLine ($"condition of X'X  ${cond * cond:.1e}") ;
 
   (* ---- 4. one column too many ---- *)
   x5 := Mat.New (pool, n, p + 1) ;
@@ -496,21 +493,20 @@ BEGIN
     Io.WriteLine ('temperature twice: LstSq answered -- it should not have')
   EXCEPT
   | Mat.Singular (col) :
-      Io.WriteLine ('temperature twice: refused, column ' + Fmt.I64Str (col)
-                    + ' (counting from 0) adds nothing to the columns before it')
+      Io.WriteLine ($'temperature twice: refused, column ${col} (counting '
+                    + 'from 0) adds nothing to the columns before it')
   END
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Mat.Singular (col) :
-    Io.ErrLine ('the design has no unique fit: column ' + Fmt.I64Str (col)) ;
+    Io.ErrLine ($'the design has no unique fit: column ${col}') ;
     Io.Halt (1)
 | Mat.NoConverge (sweeps) :
     Io.ErrLine ('the singular values did not settle') ; Io.Halt (1)
@@ -621,6 +617,7 @@ CONST
   Bins = 8 ;                   (* of equal probability under the normal *)
   Fitted = 2 ;                 (* parameters estimated from the sample:
                                   the mean and the standard deviation *)
+  Dof = Bins - 1 - Fitted ;    (* the test's degrees of freedom *)
   Trials = 1000 ;
   SeedValue = 20261003 ;       (* a fixed seed: the draws are reproducible *)
 
@@ -714,12 +711,11 @@ BEGIN
      residuals: the t distribution with n - 2 degrees of freedom ---- *)
   reg := Stats.LinReg (sw, nee) ;
   tq := Stats.TPpf (0.975, F64 (n - 2)) ;
-  Io.WriteLine ('NEE on light: slope ' + Fmt.Fixed (reg.slope, 4)
+  Io.WriteLine ($'NEE on light: slope ${reg.slope:.4}'
                 + ' umol m-2 s-1 per W m-2') ;
-  Io.WriteLine ('  95% interval ' + Fmt.Fixed (reg.slope - tq * reg.stderr, 4)
-                + ' .. ' + Fmt.Fixed (reg.slope + tq * reg.stderr, 4)
-                + '  (t quantile ' + Fmt.Fixed (tq, 4) + ', '
-                + Fmt.I64Str (n - 2) + ' degrees of freedom)') ;
+  Io.WriteLine ($'  95% interval ${reg.slope - tq * reg.stderr:.4} .. '
+                + $'${reg.slope + tq * reg.stderr:.4}  (t quantile '
+                + $'${tq:.4}, ${n - 2} degrees of freedom)') ;
 
   (* ---- 2. the residuals against the normal, bin by bin ---- *)
   res := NEW (pool, F64, n) ;
@@ -734,25 +730,22 @@ BEGIN
   count := NEW (pool, I64, Bins) ;
   Test (res, edges, z, count, x2, p) ;
   Io.WriteLine ('') ;
-  Io.WriteLine ('the ' + Fmt.I64Str (n) + ' residuals, standardised, in '
-                + Fmt.I64Str (Bins) + ' bins a normal fills equally ('
-                + Fmt.I64Str (n DIV Bins) + ' each):') ;
+  Io.WriteLine ($'the ${n} residuals, standardised, in ${Bins} bins '
+                + $'a normal fills equally (${n DIV Bins} each):') ;
   FOR k := 0 TO Bins - 1 DO
     IF k = 0 THEN lo := '  -inf' ELSE lo := Fmt.FixedPad (edges[k - 1], 6, 2) END ;
     IF k = Bins - 1 THEN hi := '   inf' ELSE hi := Fmt.FixedPad (edges[k], 6, 2) END ;
-    Io.WriteLine (lo + ' ..' + hi + Fmt.I64Pad (count[k], 5, FALSE) + '  '
-                  + Bar (count[k] DIV 2))
+    Io.WriteLine ($'${lo} ..${hi}${count[k]:5}  ${Bar (count[k] DIV 2)}')
   END ;
-  Io.WriteLine ('chi-square ' + Fmt.Fixed (x2, 2) + ' with '
-                + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom, p = '
-                + Fmt.Sci (p, 1)) ;
+  Io.WriteLine ($'chi-square ${x2:.2} with ${Dof} degrees of freedom, '
+                + $'p = ${p:.1e}') ;
 
   (* ---- the tails, where a normal model's intervals live ---- *)
   Io.WriteLine ('2.5th and 97.5th percentiles: '
-                + Fmt.Fixed (Stats.Percentile (z, 2.5), 3) + ' and '
-                + Fmt.Fixed (Stats.Percentile (z, 97.5), 3)
-                + '  (a normal: ' + Fmt.Fixed (Stats.NormalPpf (0.025), 3)
-                + ' and ' + Fmt.Fixed (Stats.NormalPpf (0.975), 3) + ')') ;
+                + $'${Stats.Percentile (z, 2.5):.3} and '
+                + $'${Stats.Percentile (z, 97.5):.3}  (a '
+                + $'normal: ${Stats.NormalPpf (0.025):.3} '
+                + $'and ${Stats.NormalPpf (0.975):.3})') ;
 
   (* ---- 3. the same test on samples that ARE normal ---- *)
   st := Stats.Seed (SeedValue) ;
@@ -767,24 +760,20 @@ BEGIN
     IF 1.0 - Stats.Chi2Cdf (x2, F64 (Bins - 1)) < 0.05 THEN loose := loose + 1 END
   END ;
   Io.WriteLine ('') ;
-  Io.WriteLine (Fmt.I64Str (Trials) + ' normal samples of ' + Fmt.I64Str (n)
-                + ', rejected at p < 0.05:') ;
-  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1 - Fitted) + ' degrees of freedom '
-                + Fmt.I64Pad (cries, 4, FALSE) + ' times') ;
-  Io.WriteLine ('  with ' + Fmt.I64Str (Bins - 1) + ' degrees of freedom '
-                + Fmt.I64Pad (loose, 4, FALSE) + ' times')
+  Io.WriteLine ($'${Trials} normal samples of ${n}, rejected at p < 0.05:') ;
+  Io.WriteLine ($'  with ${Dof} degrees of freedom ${cries:4} times') ;
+  Io.WriteLine ($'  with ${Bins - 1} degrees of freedom ${loose:4} times')
 EXCEPT
 | Csv.ParseError (what, line, col) :
     msg := what ;              (* a handler's binder has no type yet; a
                                   declared local gives it one *)
-    Io.ErrLine (path + ':' + Fmt.I64Str (line) + ':' + Fmt.I64Str (col)
-                + ': ' + msg) ;
+    Io.ErrLine ($'${path}:${line}:${col}: ${msg}') ;
     Io.Halt (1)
 | Csv.RangeError (row, col) :
-    Io.ErrLine ('a value out of range at row ' + Fmt.I64Str (row)) ;
+    Io.ErrLine ($'a value out of range at row ${row}') ;
     Io.Halt (1)
 | Stats.TooFew (got, need) :
-    Io.ErrLine ('too few values: ' + Fmt.I64Str (got)) ;
+    Io.ErrLine ($'too few values: ${got}') ;
     Io.Halt (1)
 | Faults.BadArg (what) :
     msg := what ;
@@ -847,7 +836,10 @@ when nothing is wrong. The program draws 1,000 samples that *are*
 normal, from a seeded stream (reproducible to the bit), and applies
 the same test. At the 5% level it should reject about 50 of them. With
 five degrees of freedom (eight bins, minus one, minus the two
-parameters fitted) it rejects 65. With seven, as if nothing had been
+parameters fitted) it rejects 65. (The program never types that
+five. It is `Dof = Bins - 1 - Fitted`, a CONST computed from the
+CONSTs before it, so a ninth bin changes the test and its printed
+line together.) With seven, as if nothing had been
 fitted, it rejects 23. The truth lies between, as Chernoff and
 Lehmann showed in 1954. The mean and spread were fitted to the raw
 values, not to the binned counts, and the usual rule of subtracting
@@ -870,5 +862,27 @@ to see how often it is wrong. None of this is special to M9. But some
 failures would make these checks necessary: a NaN taken for a
 number, a singular matrix answered anyway, an exception nobody
 handled. In M9 the compiler will not let a program ignore them.
+
+## Where to go from here
+
+The chapters end here, and the programs do not. The compiler's
+repository has whole programs to read, each with its test and a
+page that says how to run it:
+
+- **[flock](https://github.com/atverm/m9c/tree/main/examples/flock)**:
+  three thousand sparrows in a browser, **a task a bird**. Chapters
+  11 and 16 used `THREAD`, one for a core or a connection. A `TASK`
+  is the light kind, many thousands on a few threads, and this
+  tutorial has no chapter on it yet. The flock is the example to
+  read: each bird hears only its neighbours, and nothing steers the
+  flock.
+- **[paddle](https://github.com/atverm/m9c/tree/main/examples/paddle)**:
+  a bat-and-ball game against the computer, served to a browser by
+  an M9 program.
+- **[snake](https://github.com/atverm/m9c/tree/main/examples/snake)**:
+  the grid game, served the same way.
+
+Paddle and snake were written by an agent from the report and the
+skills, and their pages say what the checker refused on the way.
 
 [← Previous: living in the real world](17-real-world.md)

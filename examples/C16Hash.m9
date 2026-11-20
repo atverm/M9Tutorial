@@ -18,7 +18,6 @@ MODULE C16Hash ;
    given as an argument.                                             *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 IMPORT Time ;
 
 CONST
@@ -118,8 +117,7 @@ BEGIN
     path := Default ;
     IF Io.ArgCount () > 1 THEN path := Io.Arg (pool, 1) END ;
     bytes := Io.ReadFileBytes (pool, path) ;
-    Io.WriteLine ('file: ' + Fmt.I64Str (LEN (bytes)) + ' bytes in '
-                  + Fmt.I64Str (Chunks) + ' chunks') ;
+    Io.WriteLine ($'file: ${LEN (bytes)} bytes in ${Chunks} chunks') ;
 
     (* ---- one thread: the chunks in order, then the fold ---- *)
     serialPart := NEW (pool, I64, Chunks) ;
@@ -145,21 +143,21 @@ BEGIN
        shipped week hashes in a millisecond, and a number that changes
        from run to run has no place in gated output. *)
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('hash: serial ' + Fmt.Fixed (serial, 3) + ' s, '
-                  + Fmt.I64Str (Chunks) + ' threads ' + Fmt.Fixed (par, 3)
-                  + ' s, ' + Fmt.Fixed (serial / par, 1) + 'x')
+      Io.ErrLine ($'hash: serial ${serial:.3} s, ${Chunks} '
+                  + $'threads ${par:.3} s, ${serial / par:.1}x')
     END ;
 
-    Io.WriteLine ('hash sum, one thread:     ' + Fmt.I64Str (Combine (serialPart, FALSE))) ;
-    Io.WriteLine ('hash sum, eight threads:  ' + Fmt.I64Str (Combine (j.part, FALSE))) ;
+    Io.WriteLine ('hash sum, one thread:     '
+                  + $'${Combine (serialPart, FALSE)}') ;
+    Io.WriteLine ($'hash sum, eight threads:  ${Combine (j.part, FALSE)}') ;
     IF Combine (serialPart, FALSE) = Combine (j.part, FALSE) THEN
       Io.WriteLine ('identical: yes')
     ELSE
       Io.WriteLine ('identical: NO')
     END ;
     Io.WriteLine ('the same slots folded in reverse order: '
-                  + Fmt.I64Str (Combine (j.part, TRUE))
-                  + '  -- a different number, so the order is part of the definition')
+                  + $'${Combine (j.part, TRUE)}  -- a different '
+                  + 'number, so the order is part of the definition')
   EXCEPT
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)

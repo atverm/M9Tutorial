@@ -94,10 +94,9 @@ BEGIN
       s := PadLeft ('x', Big) ;
       t1 := Time.Now () ;
       fast := Time.Elapsed (t0, t1) ;
-      Io.ErrLine ('padding to ' + Fmt.I64Str (Big) + ': PadSlow '
-                  + Fmt.Fixed (slow, 3) + ' s, PadLeft '
-                  + Fmt.Fixed (fast, 4) + ' s') ;
-      Io.ErrLine ('LEN of the result: ' + Fmt.I64Str (Text.BLen (s)))
+      Io.ErrLine ($'padding to ${Big}: PadSlow ${slow:.3}'
+                  + $' s, PadLeft ${fast:.4} s') ;
+      Io.ErrLine ($'LEN of the result: ${Text.BLen (s)}')
     END
   EXCEPT
   | ValueRange : Io.ErrLine ('a value out of range')
@@ -164,8 +163,8 @@ The lesson generalises: **append in loops, and prepend once.**  When
 a loop builds a string in many pieces of its own, the library's
 `DynStr.Append` is the accumulator: a buffer that grows by doubling,
 independent of the frame's arena.  And `+` stays what it is best at,
-composing a line of output out of a few pieces:
-`'rows ' + Fmt.I64Str (n)`.
+joining a few strings.  A line of output with values in it has a
+form of its own, two sections down.
 
 ## The library already had it
 
@@ -174,7 +173,141 @@ For a NUMBER, Pascal's `:8` pads left to a width, and Fmt has it,
 with a flag for zero fill.  Look before writing.  The corpus rule is
 that the third private copy of something becomes the shared
 procedure, and the first copy should be a lookup
-(`docs/modules/Fmt.md`, or `m9c --json corpus/Fmt.m9`).
+(`docs/modules/Fmt.md`, or `m9c --json corpus/Fmt.m9`).  The next
+section writes the same field inside a string, as `${n:8}`.
+
+## A line with values in it
+
+Most strings a program builds are one line of output: some words,
+and values between them.  Written with `+`, every number needs its
+`Fmt` call and every piece its quotes, and the line a reader wants
+to see is cut into six.  An **interpolation literal** is that line
+written as it will print, with a hole where a value goes:
+
+```m9 C12Line.m9
+MODULE C12Line ;
+
+(* Chapter 12 writes a line that holds values.  An interpolation
+   literal is a string with holes: $'...${e}...'.  Each hole holds
+   one expression, and a number may end in a format.  The checker
+   holds the format against the type of the value. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+CONST
+  Station = 'SE-Htm' ;
+
+VAR
+  rows, gaps : I64 ;
+  mean, tiny : F64 ;
+  flag : CHAR ;
+  done : BOOL ;
+
+BEGIN
+  BEGIN
+    rows := 336 ;
+    gaps := 7 ;
+    mean := -2.4567 ;
+    tiny := 0.00001234 ;
+    flag := 'U' ;
+    done := gaps = 0 ;
+
+    (* The same line twice: by hand, and with holes. *)
+    Io.WriteLine ('station ' + Station + ': ' + Fmt.I64Str (rows) + ' rows, mean '
+                  + Fmt.Fixed (mean, 2)) ;
+    Io.WriteLine ($'station ${Station}: ${rows} rows, mean ${mean:.2}') ;
+
+    (* A hole takes a string, a CHAR, an integer, a BOOL or a real as
+       it is.  A real without a format is its shortest exact form. *)
+    Io.WriteLine ($'flag ${flag}, complete ${done}, mean ${mean}') ;
+
+    (* A hole holds any one expression. *)
+    Io.WriteLine ($'${rows - gaps} of ${rows} present, ${100 * gaps DIV rows} % missing') ;
+
+    (* An integer takes a width, and a zero before it to fill. *)
+    Io.WriteLine ($'[${rows:8}] [${rows:08}] [${gaps:2}]') ;
+
+    (* A real takes decimals, a width before them, and e for the
+       exponent form.  A lone e gives every digit. *)
+    Io.WriteLine ($'[${mean:.2}] [${mean:9.2}] [${tiny:.2e}] [${tiny:e}]') ;
+
+    (* Braces and a lone $ are text, so JSON reads as it is. *)
+    Io.WriteLine ($'{"station":"${Station}","rows":${rows},"cost":"$5"}')
+  EXCEPT
+  | ValueRange : Io.ErrLine ('a value out of range')
+  END
+END C12Line.
+```
+
+```output C12Line
+station SE-Htm: 336 rows, mean -2.46
+station SE-Htm: 336 rows, mean -2.46
+flag U, complete FALSE, mean -2.4567
+329 of 336 present, 2 % missing
+[     336] [00000336] [ 7]
+[-2.46] [    -2.46] [1.23e-5] [1.2340000000000000e-5]
+{"station":"SE-Htm","rows":336,"cost":"$5"}
+```
+
+The first two lines of the output are the same line, built both
+ways.  `$'...'` (or `$"..."`) opens the literal, and `${e}` is a
+hole.  The compiler turns the literal into the chain of `+` you
+would have written, so everything this chapter said about `+` holds
+for it, and nothing about it is decided while the program runs.
+
+- **A hole takes one expression**: a string, a `CHAR`, an integer,
+  a `BOOL` or a real.  A real without a format prints its shortest
+  exact form, the text that reads back to the same number.
+- **A number may end in a format.**  `${n:8}` is a width, `${n:08}`
+  fills it with zeros, `${x:.2}` is two decimals, `${x:9.2}` both,
+  `${x:.2e}` the exponent form, and `${x:e}` every digit a 64-bit
+  real has.  These are the texts `Fmt.I64Pad`, `Fmt.Fixed`,
+  `Fmt.FixedPad` and `Fmt.Sci` answer, digit for digit, and a hole
+  needs no import.
+- **Braces and a lone `$` are text.**  Only `${` opens a hole, so
+  the last line writes JSON without a single escape.
+- **A hole holds no string literal**, and one expression only.  A
+  value that needs a quote gets a name first.
+- **A hole does not escape.**  A string that goes into JSON goes
+  through `Json.Quote`, and a value that goes into SQL goes as a
+  parameter, never as text in the statement.
+
+The format is part of the program, so the checker reads it:
+
+```m9 X12Hole.m9
+MODULE X12Hole ;
+
+(* EXPECT-ERROR: an integer in a hole takes a width and no decimals *)
+(* Chapter 12 shows a program that must NOT compile.  A format in a
+   hole is held against the type of the value.  Decimals belong to a
+   real.  An integer has none, so ${rows:.2} is a mistake about what
+   rows is, and the checker says so before the program runs.         *)
+
+IMPORT Io ;
+
+VAR
+  rows : I64 ;
+
+BEGIN
+  rows := 336 ;
+  Io.WriteLine ($'rows ${rows:.2}')      (* refused: an integer has no decimals *)
+END X12Hole.
+```
+
+```refusal X12Hole
+X12Hole.m9:16:26: X12Hole body: an integer in a hole takes a width and no decimals: write ${n:8}, or ${F64 (n):8.2} for a real (par 2.3)
+```
+
+Decimals belong to a real.  An integer has none, and `${rows:.2}` is
+either a slip or a wrong idea of what `rows` is.  Either way it is
+caught before the program runs, with the two ways to mean it.  A
+width on a string is refused the same way, and so is a `BYTE` or a
+record in a hole: each has more than one text, and M9 does not
+choose.
+
+From here on the chapters write their output lines this way.  `Fmt`
+stays for a number that is wanted as a string on its own.
 
 ## What the checker refuses
 
@@ -210,8 +343,10 @@ END X12Int.
 X12Int.m9:18:16: X12Int body: cannot concatenate a string with I64
 ```
 
-`Fmt.I64Str (n)` says how, `Fmt.Fixed (x, 3)` says how for a real,
-and a reviewer reading the line can see the format that was chosen.
+A hole says how: `$'rows ${n}'` is the integer as it is, and
+`$'mean ${x:.3}'` a real with three decimals.  A reviewer reading
+the line can see the format that was chosen.  `Fmt.I64Str (n)` and
+`Fmt.Fixed (x, 3)` say the same as calls.
 
 [← Previous: threads, waiting in parallel](11-threads.md)
 

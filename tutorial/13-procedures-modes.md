@@ -25,7 +25,6 @@ MODULE C13Modes ;
              say so, or the retention is refused                    *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 IMPORT Math ;
 
 TYPE
@@ -102,8 +101,7 @@ END Remember ;
 
 PROCEDURE Show (RO name: STR ; RO p: Point) RAISES ValueRange =
 BEGIN
-  Io.WriteLine (name + ' = (' + Fmt.Fixed (p.x, 2) + ', '
-                + Fmt.Fixed (p.y, 2) + ')  norm ' + Fmt.Fixed (Norm (p), 3))
+  Io.WriteLine ($'${name} = (${p.x:.2}, ${p.y:.2})  norm ${Norm (p):.3}')
 END Show ;
 
 VAR
@@ -120,9 +118,8 @@ BEGIN
     Scale (a, 0.5) ;                    (* VAR: a itself changes *)
     Show ('a scaled by 0.5', a) ;
 
-    Io.WriteLine ('sign of -2.5: ' + Fmt.I64Str (Sign (-2.5))
-                  + ', of 0.0: ' + Fmt.I64Str (Sign (0.0))
-                  + ', of 7.0: ' + Fmt.I64Str (Sign (7.0))) ;
+    Io.WriteLine ($'sign of -2.5: ${Sign (-2.5)}, of 0.0: '
+                  + $'${Sign (0.0)}, of 7.0: ${Sign (7.0)}') ;
 
     (* Make three points on the plane.  One query below has a
        neighbour within 2, and one has none. *)
@@ -134,15 +131,13 @@ BEGIN
     END ;
     origin.x := 6.0 ; origin.y := 4.0 ;
     IF Nearest (pts, origin, 2.0) IS SOME p THEN
-      Io.WriteLine ('nearest to (6, 4) within 2: (' + Fmt.Fixed (p.x, 2)
-                    + ', ' + Fmt.Fixed (p.y, 2) + ')')
+      Io.WriteLine ($'nearest to (6, 4) within 2: (${p.x:.2}, ${p.y:.2})')
     ELSE
       Io.WriteLine ('nothing within 2 of (6, 4)')
     END ;
     origin.x := 30.0 ; origin.y := 30.0 ;
     IF Nearest (pts, origin, 2.0) IS SOME p THEN
-      Io.WriteLine ('nearest to (30, 30) within 2: (' + Fmt.Fixed (p.x, 2)
-                    + ', ' + Fmt.Fixed (p.y, 2) + ')')
+      Io.WriteLine ($'nearest to (30, 30) within 2: (${p.x:.2}, ${p.y:.2})')
     ELSE
       Io.WriteLine ('nothing within 2 of (30, 30)')
     END ;
@@ -260,7 +255,6 @@ MODULE C13Kinds ;
    per value with no ordinals written down anywhere. *)
 
 IMPORT Io ;
-IMPORT Fmt ;
 
 TYPE Quality = (Good, Suspect, Bad) ;
 
@@ -299,9 +293,9 @@ BEGIN
   END ;
 
   FOR q := Quality.Good TO Quality.Bad DO
-    Io.WriteLine (NAME (q) + ': ' + Fmt.I64Str (tally[q]))
+    Io.WriteLine ($'${NAME (q)}: ${tally[q]}')
   END ;
-  Io.WriteLine ('kept ' + Fmt.I64Str (kept) + ' of 8')
+  Io.WriteLine ($'kept ${kept} of 8')
 END C13Kinds.
 ```
 

@@ -33,7 +33,6 @@ MODULE C14Flux ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Csv ;
 IMPORT Frame ;
 IMPORT NetCDF ;
@@ -143,8 +142,8 @@ BEGIN
        line: the shipped week parses in a millisecond, and a number
        that changes from run to run has no place in gated output *)
     IF Io.ArgCount () > 1 THEN
-      Io.ErrLine ('parsed ' + Fmt.I64Str (Csv.Rows (t)) + ' rows in '
-                  + Fmt.Fixed (Time.Elapsed (t0, t1), 3) + ' s')
+      Io.ErrLine ($'parsed ${Csv.Rows (t)} rows in '
+                  + $'${Time.Elapsed (t0, t1):.3} s')
     END ;
 
     (* Count, not assert, the columns that were actually parsed. *)
@@ -152,9 +151,8 @@ BEGIN
     FOR c := 0 TO Csv.Cols (t) - 1 DO
       IF Csv.IsSet (t, c) THEN parsed := parsed + 1 END
     END ;
-    Io.WriteLine ('rows ' + Fmt.I64Str (Csv.Rows (t))
-                  + ', columns in the file ' + Fmt.I64Str (Csv.Cols (t))
-                  + ', parsed ' + Fmt.I64Str (parsed)) ;
+    Io.WriteLine ($'rows ${Csv.Rows (t)}, columns in the file '
+                  + $'${Csv.Cols (t)}, parsed ${parsed}') ;
 
     (* ---- 2. a frame, then a time series on the half-hour grid ---- *)
     fr := Frame.FromCsv (pool, t) ;
@@ -179,18 +177,16 @@ BEGIN
     ta := Frame.ColF32 (fr, 'TA_F') ;
     neeOk := Present (nee) ;
     taOk := Present (ta) ;
-    Io.WriteLine ('NEE_VUT_REF: ' + Fmt.I64Str (LEN (neeOk)) + ' of '
-                  + Fmt.I64Str (LEN (nee)) + ' present, mean '
-                  + Fmt.Fixed (Stats.Mean (neeOk), 3) + ' umol m-2 s-1') ;
-    Io.WriteLine ('TA_F:        ' + Fmt.I64Str (LEN (taOk)) + ' of '
-                  + Fmt.I64Str (LEN (ta)) + ' present, mean '
-                  + Fmt.Fixed (Stats.Mean (taOk), 3) + ' degC') ;
+    Io.WriteLine ($'NEE_VUT_REF: ${LEN (neeOk)} of ${LEN (nee)} present, '
+                  + $'mean ${Stats.Mean (neeOk):.3} umol m-2 s-1') ;
+    Io.WriteLine ($'TA_F:        ${LEN (taOk)} of ${LEN (ta)} '
+                  + $'present, mean ${Stats.Mean (taOk):.3} degC') ;
 
     (* ---- 4. write the NetCDF, then read it back and compare ---- *)
     Frame.WriteTsNc (pool, ts, OutPath) ;
     back := Frame.TsFromNc (pool, OutPath) ;
-    Io.WriteLine ('wrote ' + OutPath + ', read back '
-                  + Fmt.I64Str (Frame.Rows (Frame.TsFrame (back))) + ' rows') ;
+    Io.WriteLine ($'wrote ${OutPath}, read back '
+                  + $'${Frame.Rows (Frame.TsFrame (back))} rows') ;
     IF Same (nee, Frame.ColF32 (Frame.TsFrame (back), 'NEE_VUT_REF'))
        AND Same (ta, Frame.ColF32 (Frame.TsFrame (back), 'TA_F')) THEN
       Io.WriteLine ('both columns identical after the round trip: yes')
@@ -200,7 +196,7 @@ BEGIN
   EXCEPT
   | Csv.ParseError (whatP, lineP, colP) :
       what := whatP ; ln := lineP ;
-      Io.ErrLine ('CSV: ' + what + ' at line ' + Fmt.I64Str (ln)) ;
+      Io.ErrLine ($'CSV: ${what} at line ${ln}') ;
       Io.Halt (1)
   | Csv.RangeError : Io.ErrLine ('CSV: a value out of range') ; Io.Halt (1)
   | Io.IOError : Io.ErrLine ('cannot read ' + path) ; Io.Halt (1)
@@ -216,8 +212,7 @@ BEGIN
          order, so it is read off the EXCEPTION declaration, not
          remembered. *)
       op := opP ; detail := detailP ; st := statusP ;
-      Io.ErrLine ('netcdf: ' + op + ': ' + detail + ' (status '
-                  + Fmt.I64Str (st) + ')') ;
+      Io.ErrLine ($'netcdf: ${op}: ${detail} (status ${st})') ;
       Io.Halt (1)
   | Stats.TooFew : Io.ErrLine ('nothing present to average') ; Io.Halt (1)
   | ValueRange : Io.ErrLine ('a value out of range') ; Io.Halt (1)

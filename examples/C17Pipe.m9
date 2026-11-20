@@ -43,7 +43,6 @@ IMPORT Text ;
 IMPORT System ;
 IMPORT DynStr ;
 IMPORT Io ;
-IMPORT Fmt ;
 
 CONST
   DefaultTop = 5 ;
@@ -110,7 +109,7 @@ BEGIN
   IF Text.BLen (s) = 0 THEN RETURN 0 - 1 END ;
   v := 0 ;
   FOR i := 0 TO Text.BLen (s) - 1 DO
-    IF (I64 (Text.BAt (s, i)) < ORD ('0')) OR (I64 (Text.BAt (s, i)) > ORD ('9')) THEN RETURN 0 - 1 END ;
+    IF (Text.BAt (s, i) < '0') OR (Text.BAt (s, i) > '9') THEN RETURN 0 - 1 END ;
     v := v * 10 + (I64 (Text.BAt (s, i)) - ORD ('0'))
   END ;
   RETURN v
@@ -130,7 +129,7 @@ BEGIN
   IF Text.BLen (s) = 0 THEN RETURN DefaultTop END ;
   n := ParseInt (s) ;
   IF n >= 0 THEN RETURN n END ;
-  Io.ErrLine ('--top is not a count; showing ' + Fmt.I64Str (DefaultTop)) ;
+  Io.ErrLine ($'--top is not a count; showing ${DefaultTop}') ;
   RETURN DefaultTop
 END TopWanted ;
 
@@ -144,14 +143,11 @@ PROCEDURE Stage (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
                  RO input: STR) : STR
   RAISES ValueRange, Io.IOError =
 VAR
-  env : SLICE OF STR ;
   r : System.Result ;
 BEGIN
-  env := NEW (pool, STR, 1) ;
-  env[0] := 'LC_ALL=C' ;
-  r := System.Exec (pool, prog, args, input, env) ;
+  r := System.Exec (pool, prog, args, input, ['LC_ALL=C']) ;
   IF r.status # 0 THEN
-    Io.ErrLine (prog + ' exited with status ' + Fmt.I64Str (r.status)) ;
+    Io.ErrLine ($'${prog} exited with status ${r.status}') ;
     IF Text.BLen (r.err) > 0 THEN Io.ErrLine (r.err) END ;
     Io.Halt (1)
   END ;
@@ -168,15 +164,14 @@ VAR
   i, j, shown, count : I64 ;
   word : STR ;
 BEGIN
-  Io.WriteLine ('the ' + Fmt.I64Str (top)
-                + ' most frequent words in the passage:') ;
+  Io.WriteLine ($'the ${top} most frequent words in the passage:') ;
   i := 0 ;
   shown := 0 ;
   WHILE (i < Text.BLen (counts)) AND (shown < top) DO
     WHILE (i < Text.BLen (counts)) AND (Text.BIs (counts, i, ' ')) DO i := i + 1 END ;
     count := 0 ;
-    WHILE (i < Text.BLen (counts)) AND (I64 (Text.BAt (counts, i)) >= ORD ('0'))
-          AND (I64 (Text.BAt (counts, i)) <= ORD ('9')) DO
+    WHILE (i < Text.BLen (counts)) AND (Text.BAt (counts, i) >= '0')
+          AND (Text.BAt (counts, i) <= '9') DO
       count := count * 10 + (I64 (Text.BAt (counts, i)) - ORD ('0')) ;
       i := i + 1
     END ;
@@ -186,8 +181,7 @@ BEGIN
     word := SLICE (counts, i, j - i) ;
     IF Text.BLen (word) > 0 THEN
       shown := shown + 1 ;
-      Io.WriteLine ('  ' + Fmt.I64Str (shown) + '. ' + word
-                    + '  (' + Fmt.I64Str (count) + ')')
+      Io.WriteLine ($'  ${shown}. ${word}  (${count})')
     END ;
     i := j ;
     IF (i < Text.BLen (counts)) AND (Text.BIs (counts, i, 0AC)) THEN i := i + 1 END
@@ -197,7 +191,6 @@ END Report ;
 VAR
   pool : POOL ;
   top : I64 ;
-  none, uniqArgs, sortArgs : SLICE OF STR ;
   words, sorted, counted, ranked : STR ;
 
 BEGIN
@@ -208,21 +201,14 @@ BEGIN
        The first stage reads it on its stdin. *)
     words := WordsOf (Passage ()) ;
 
-    none := NEW (pool, STR, 0) ;
-    uniqArgs := NEW (pool, STR, 1) ;
-    uniqArgs[0] := '-c' ;
-    sortArgs := NEW (pool, STR, 2) ;
-    sortArgs[0] := '-k1,1nr' ;
-    sortArgs[1] := '-k2,2' ;
-
     (* Run three stages, each its own program, each checked.  The
        output of one is the stdin of the next: an M9 string, not a
        temp file.  The second sort ranks by count (numeric,
        descending) then by the word, so ties have a defined order and
        every run is identical down to the byte. *)
-    sorted := Stage (pool, 'sort', none, words) ;
-    counted := Stage (pool, 'uniq', uniqArgs, sorted) ;
-    ranked := Stage (pool, 'sort', sortArgs, counted) ;
+    sorted := Stage (pool, 'sort', NEW (STR, 0), words) ;
+    counted := Stage (pool, 'uniq', ['-c'], sorted) ;
+    ranked := Stage (pool, 'sort', ['-k1,1nr', '-k2,2'], counted) ;
 
     Report (ranked, top)
   EXCEPT

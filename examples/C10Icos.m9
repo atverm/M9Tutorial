@@ -27,7 +27,6 @@ IMPORT Text ;
 
 IMPORT Io ;
 IMPORT Faults ;
-IMPORT Fmt ;
 IMPORT Math ;
 IMPORT Mat ;
 IMPORT Plot ;
@@ -160,16 +159,12 @@ BEGIN
 
   Io.Write ('hours in the window ') ;
   Io.WriteI64 (valid) ;
-  Io.WriteLine (' (of ' + Fmt.I64Str (n) + ' in the store)') ;
-  Io.WriteLine ('mean 2021.5        ' +
-                Fmt.Fixed (coef [0], 2) + ' umol/mol') ;
-  Io.WriteLine ('trend              ' +
-                Fmt.Fixed (coef [1], 3) + ' umol/mol per year') ;
-  Io.WriteLine ('annual amplitude   ' +
-                Fmt.Fixed (amp1, 2) + ' (peak to trough ' +
-                Fmt.Fixed (2.0 * amp1, 2) + ')') ;
-  Io.WriteLine ('semiannual         ' +
-                Fmt.Fixed (amp2, 2)) ;
+  Io.WriteLine ($' (of ${n} in the store)') ;
+  Io.WriteLine ($'mean 2021.5        ${coef [0]:.2} umol/mol') ;
+  Io.WriteLine ($'trend              ${coef [1]:.3} umol/mol per year') ;
+  Io.WriteLine ($'annual amplitude   ${amp1:.2} (peak '
+                + $'to trough ${2.0 * amp1:.2})') ;
+  Io.WriteLine ($'semiannual         ${amp2:.2}') ;
 
   nm := 0 ;
   FOR i := 0 TO Months - 1 DO
