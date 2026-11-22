@@ -133,10 +133,13 @@ flag argument has to look the flag up.
 land where the name says.  It is also thousands of times slower than
 it needs to be, and the reason is worth understanding once.
 
-`+` allocates its result in the frame's arena, and it has one
-optimisation: when its LEFT operand is the newest allocation there,
-it extends that allocation in place instead of copying.  That makes
-`d := d + x` in a loop linear.  With a literal on the left,
+`+` allocates its result in the frame's arena, and it has two
+optimisations.  When its LEFT operand is the newest allocation there,
+it extends that allocation in place instead of copying.  And from
+0.29.1, when something was allocated after it (a call's answer, say),
+the arena remembers the string it is growing and gives it room, so
+the next append lands in the room.  Both make `d := d + x` in a loop
+linear.  With a literal on the left,
 `' ' + d` can never extend anything, because the literal is not in
 the arena.  So it copies all of `d` every time round, and `n` spaces
 cost about `n²/2` character copies.  Run the program with any
@@ -159,11 +162,12 @@ the code prepends the whole of it to the body once:
 them there.  It takes three lines and no library, and the reader can
 see the side from the last line alone.
 
-The lesson generalises: **append in loops, and prepend once.**  When
-a loop builds a string in many pieces of its own, the library's
-`DynStr.Append` is the accumulator: a buffer that grows by doubling,
-independent of the frame's arena.  And `+` stays what it is best at,
-joining a few strings.  A line of output with values in it has a
+The lesson generalises: **append in loops, and prepend once.**  An
+append by `+` costs what the library's `DynStr.Append` costs, whatever
+the loop calls between two appends: 40,000 entries made by calls take
+about a hundredth of a second either way.  `DynStr` stays the
+accumulator a record holds across calls, a buffer that grows by
+doubling, independent of the frame's arena.  A line of output with values in it has a
 form of its own, two sections down.
 
 ## The library already had it

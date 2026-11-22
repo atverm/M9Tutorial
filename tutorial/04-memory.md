@@ -230,14 +230,15 @@ Walk the pieces:
   number) is freed when that statement ends.  So a loop that writes
   a composed line each turn uses the arena for one line, not for all
   of them.  `s := s + x` in a loop is linear: the arena extends its
-  latest allocation in place.  That holds while nothing else is
-  carved between the appends.  Where it cannot be relied on,
-  `DynStr` grows a buffer in a pool you name.  `Describe` above
+  latest allocation in place, and from 0.29.1 a string something was
+  carved after is given room for its next appends.  `DynStr` grows a
+  buffer in a pool you name, for an accumulator a record holds
+  across calls.  `Describe` above
   names a `scratch` pool of its own and RETURNs the view, which is
   moved into the caller's frame on the way out like any other
   answer.  A string that must outlive everything is declared where
-  it is needed.  The report's rule, par 2.3, says: `+` composes,
-  `DynStr` accumulates.
+  it is needed.  The report's par 2.3 says what `+` costs, and
+  when a prepend still copies.
 - **The docstrings are load-bearing.**  `m9c --doc` renders the
   comment under each procedure header, with its
   `name -- description` parameter lines, into the module's reference
